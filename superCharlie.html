@@ -1,0 +1,2351 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Estadística Descriptiva</title>
+<meta name="description" content="Estadística descriptiva para Psicología: frecuencias, tendencia central, dispersión, tallo y hojas, puntajes z y curva normal. Coma decimal y redondeo por paridad.">
+<style>
+:root{--bg:#f5f4ef;--card:#ffffff;--ink:#1c2230;--muted:#5d6574;--line:#e2dfd6;--acc:#2c5a87;--acc-ink:#ffffff;--acc-soft:#e5edf6;--shade:rgba(44,90,135,.28);--warn:#9a3b2e;--ok:#2d6a4f}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13161b;--card:#1c2027;--ink:#e6e8ed;--muted:#9aa2b0;--line:#2c323c;--acc:#82b2e2;--acc-ink:#0f1c2a;--acc-soft:#223142;--shade:rgba(130,178,226,.32);--warn:#e48d7f;--ok:#7cc5a1}}
+:root[data-theme="dark"]{--bg:#13161b;--card:#1c2027;--ink:#e6e8ed;--muted:#9aa2b0;--line:#2c323c;--acc:#82b2e2;--acc-ink:#0f1c2a;--acc-soft:#223142;--shade:rgba(130,178,226,.32);--warn:#e48d7f;--ok:#7cc5a1}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1060px;margin:0 auto;padding:0 16px}
+header.top{padding:28px 0 16px}
+header.top h1{font-size:27px;margin:0 0 4px;letter-spacing:-.015em}
+header.top p{margin:0;color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 16px}
+h2{font-size:17px;margin:0 0 12px}
+h3{font-size:15px;margin:22px 0 8px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
+label.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
+input[type=checkbox]{width:auto}
+input[type=file]{padding:6px}
+textarea{resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.fila{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;margin:12px 0}
+.fila>label{flex:1 1 170px}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;padding:8px 14px}
+button:hover{border-color:var(--acc)}
+button.prim{background:var(--acc);border-color:var(--acc);color:var(--acc-ink);font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:6px}
+.seg button{border:0;border-radius:0;background:transparent;color:var(--muted)}
+.seg button.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.hint{font-weight:400;color:var(--muted);font-size:12.5px}
+.estado{margin:8px 0 0;font-size:14px}
+.estado.err{color:var(--warn)}
+.estado.ok{color:var(--ok)}
+nav.tabs{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;gap:4px;overflow-x:auto;padding:8px 0;margin-bottom:14px;border-bottom:1px solid var(--line)}
+nav.tabs button{white-space:nowrap;border:0;background:transparent;color:var(--muted);padding:8px 12px}
+nav.tabs button.on{background:var(--acc-soft);color:var(--acc);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.dato{border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.dato .k{font-size:12px;color:var(--muted)}
+.dato .v{font-size:22px;font-weight:650;font-variant-numeric:tabular-nums;word-break:break-word}
+.dato .s{font-size:12px;color:var(--muted)}
+.tabla-wrap{overflow:auto;max-height:520px;border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:14px}
+th,td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--bg);font-size:12.5px;color:var(--muted);position:sticky;top:0}
+td:first-child,th:first-child{text-align:left}
+tbody tr:last-child td{border-bottom:0}
+tfoot td{font-weight:650;border-top:2px solid var(--line);border-bottom:0}
+tr.hl td{background:var(--acc-soft)}
+details{border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0;background:var(--bg)}
+summary{cursor:pointer;font-weight:600;font-size:14px}
+.pasos p{margin:6px 0}
+.res{display:grid;grid-template-columns:max-content 1fr;gap:5px 18px;margin:12px 0;font-variant-numeric:tabular-nums}
+.res dt{color:var(--muted)}
+.res dd{margin:0;font-weight:650}
+.tallo{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:15px;line-height:1.9;overflow-x:auto;white-space:nowrap}
+.tallo .t{display:inline-block;min-width:3em;text-align:right;padding-right:10px;border-right:2px solid var(--ink);margin-right:10px;font-weight:650}
+.tallo .r{color:var(--muted);font-size:12px;margin-left:14px}
+.vacio{color:var(--muted);padding:26px;text-align:center;border:1px dashed var(--line);border-radius:10px}
+.botones{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px 14px;margin:8px 0}
+.items .it{display:flex;align-items:center;gap:8px;font-size:14px}
+.items .it span{flex:1;overflow:hidden;text-overflow:ellipsis}
+.items .it small{color:var(--muted)}
+svg.normal{width:100%;height:auto;display:block}
+svg.normal .curva{fill:none;stroke:var(--ink);stroke-width:2}
+svg.normal .eje{stroke:var(--muted);stroke-width:1}
+svg.normal .sombra{fill:var(--shade);stroke:none}
+svg.normal .txt{fill:var(--ink);font-size:12px;font-family:system-ui,sans-serif}
+svg.normal .txt2{fill:var(--muted);font-size:11px;font-family:system-ui,sans-serif}
+svg.normal .tit{fill:var(--ink);font-size:15px;font-weight:600;font-family:system-ui,sans-serif}
+svg.normal .marca{stroke:var(--acc);stroke-width:1.6;stroke-dasharray:5 4}
+svg.normal .marcaTxt{fill:var(--acc);font-size:12px;font-weight:600;font-family:system-ui,sans-serif}
+svg.normal .infl,svg.normal .infl-ley{fill:var(--acc)}
+svg.normal .media{stroke:var(--muted);stroke-dasharray:2 3}
+svg.normal .halo{paint-order:stroke;stroke:var(--card);stroke-width:4px;stroke-linejoin:round}
+th{white-space:normal;min-width:84px;vertical-align:bottom}
+.chat{display:flex;flex-direction:column;gap:10px;max-height:520px;overflow-y:auto;padding:12px;margin:12px 0;border:1px solid var(--line);border-radius:10px;background:var(--bg)}
+.chat > *{flex-shrink:0}
+.msg{max-width:85%;padding:9px 13px;border-radius:12px;line-height:1.55;word-wrap:break-word}
+.msg.yo{align-self:flex-end;background:var(--acc);color:var(--acc-ink);white-space:pre-wrap}
+.msg.ia{align-self:flex-start;background:var(--card);border:1px solid var(--line)}
+.msg.ia p{margin:0 0 8px}.msg.ia p:last-child{margin:0}
+.msg.ia ul,.msg.ia ol{margin:4px 0 8px;padding-left:20px}
+.msg.err{align-self:stretch;max-width:none;background:transparent;border:1px solid var(--warn);color:var(--warn);white-space:pre-wrap;font-size:14px}
+.chat-entrada textarea{font-family:inherit;font-size:15px}
+.fab{position:fixed;right:18px;bottom:18px;z-index:20;border-radius:999px;padding:12px 18px;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);z-index:30;background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;gap:6px;padding:12px 16px;transform:translateX(105%);transition:transform .2s ease;box-shadow:-6px 0 24px rgba(0,0,0,.14)}
+body.chat-abierto .drawer{transform:none}
+body.chat-abierto .fab{display:none}
+@media (min-width:1250px){body.chat-abierto{padding-right:440px}}
+.drawer-top{display:flex;align-items:center;justify-content:space-between}
+.drawer-top h2{margin:0}
+.drawer-top button{border:0;font-size:18px;padding:4px 10px}
+.drawer{overflow-y:auto}
+.drawer .chat{flex:1 0 220px;min-height:220px;max-height:none;margin:6px 0}
+.drawer .conexion{margin:0}
+.drawer .botones{margin:6px 0}
+.msg.accion{align-self:flex-start;max-width:95%;font-size:13px;color:var(--ok);background:transparent;border:1px dashed var(--ok);padding:6px 10px}
+.llenado{outline:2px solid var(--ok)!important;outline-offset:1px}
+.abrir-top{margin-top:12px}
+nav.tabs button.tab-asistente{color:var(--acc);font-weight:600}
+.entendido{list-style:none;padding:0;margin:10px 0;font-size:14px}
+.entendido li{padding:3px 0}
+.entendido li.no{color:var(--warn)}
+.msg.resultado{align-self:stretch;max-width:none;background:var(--card);border:2px solid var(--acc);font-size:13px;overflow-x:auto}
+.msg.resultado .rt-tit{font-weight:700;color:var(--acc);margin-bottom:6px}
+.msg.resultado .grid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.msg.resultado .dato{padding:6px 8px}.msg.resultado .dato .v{font-size:16px}
+.msg.resultado table{font-size:12px}.msg.resultado th,.msg.resultado td{padding:4px 6px}
+.msg.resultado .tabla-wrap{max-height:none}
+.msg.resultado .res{margin:6px 0}
+.senalado{outline:3px solid #e8a33d!important;outline-offset:2px;background:rgba(232,163,61,.18)!important;border-radius:6px}
+tr.senalado td{background:rgba(232,163,61,.25)!important}
+.msg.paso{align-self:flex-start;max-width:95%;font-size:13px;color:var(--muted);background:transparent;padding:2px 4px;font-style:italic}
+#sel-barra{position:fixed;z-index:40;display:flex;gap:6px;padding:6px;background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:0 6px 20px rgba(0,0,0,.18)}
+#sel-barra[hidden]{display:none}
+#sel-barra button{padding:6px 10px;font-size:13px;white-space:nowrap}
+::highlight(marcado){background-color:rgba(232,163,61,.45)}
+.marcado-campo{outline:3px dashed #e8a33d!important;outline-offset:2px}
+.marcado-chip{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:6px 10px;border:1px dashed #e8a33d;border-radius:8px;background:rgba(232,163,61,.12);margin:4px 0}
+.marcado-chip[hidden]{display:none}
+.marcado-chip span{flex:1}
+.marcado-chip button{border:0;padding:0 6px;background:transparent}
+.boton-marcador{display:inline-block;padding:10px 16px;border-radius:999px;background:var(--acc);color:var(--acc-ink)!important;text-decoration:none;font-weight:600;cursor:grab}
+.boton-marcador.apagado{opacity:.45;cursor:not-allowed}
+mark.dudoso{background:transparent;color:var(--warn);text-decoration:underline wavy var(--warn);font-weight:600}
+.respuestas{margin:4px 0 0;padding-left:0;list-style:none;font-size:14px}
+.respuestas li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.respuestas .rq{flex:1}
+.respuestas .rv{font-weight:700;font-variant-numeric:tabular-nums;font-size:16px;white-space:nowrap}
+.respuestas li.no{color:var(--warn)}
+.copiar-r{padding:3px 9px;font-size:12px}
+#enunciado-res .rt-tit{font-weight:700;color:var(--acc);margin-top:8px}
+.chip{display:inline-block;font-size:12px;font-weight:600;padding:2px 9px;border-radius:999px;margin-left:6px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.chip.ok{color:var(--ok);border-color:var(--ok)}
+.chip.err{color:var(--warn);border-color:var(--warn)}
+.modelos{width:100%;font-size:13px;margin:6px 0}
+.modelos td,.modelos th{padding:5px 6px;white-space:nowrap}
+.modelos tr.sel td{background:var(--acc-soft)}
+.etq{display:inline-block;font-size:11px;padding:1px 7px;border-radius:999px;background:var(--ok);color:var(--card);font-weight:600}
+.aviso{font-size:13px;color:var(--warn);margin:6px 0}
+footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
+@media (max-width:600px){.dato .v{font-size:19px}header.top h1{font-size:23px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <h1>Estadística Descriptiva</h1>
+  <p>Análisis de Datos Cuantitativos en Psicología I · redondeo por paridad</p>
+  <button id="o-abrir-top" class="prim abrir-top">💬 Abrir asistente</button>
+  <button id="ir-marcador" class="abrir-top">📤 Enviar desde otras páginas</button>
+</div></header>
+
+<main class="wrap">
+
+<section class="card" id="sec-datos">
+  <h2>1 · Datos</h2>
+  <div class="seg" role="tablist">
+    <button data-fuente="enunciado" class="on">Pegar enunciado</button>
+    <button data-fuente="pegar">Pegar solo datos</button>
+    <button data-fuente="csv">Cargar archivo CSV</button>
+  </div>
+  <div id="fuente-enunciado">
+    <label>Enunciado del ejercicio <span class="hint">Pegalo completo, tal como lo da el profe. La página saca sola los datos, la amplitud, el inicio, el fin, el orden de las filas, la acumulación y el separador decimal.</span>
+      <textarea id="txt-enunciado" rows="7" placeholder="A continuación, se presentan las notas…&#10;&#10;50 67 80 49 35&#10;76 72 73 98 40&#10;&#10;Construya una distribución de frecuencias… Haga 13 intervalos de amplitud 5, iniciando en el valor 35…"></textarea>
+    </label>
+    <div class="botones"><button id="btn-enunciado" class="prim">Leer enunciado y resolver</button></div>
+    <div id="enunciado-res"></div>
+  </div>
+  <div id="fuente-pegar" hidden>
+    <label>Datos <span class="hint">Separados por espacios, saltos de línea o punto y coma. Podés usar coma o punto decimal (72,5 o 72.5).</span>
+      <textarea id="txt-datos" rows="4" placeholder="72 85 64 90 71 66 78 ..."></textarea>
+    </label>
+  </div>
+  <div id="fuente-csv" hidden>
+    <div class="fila"><label>Archivo <input type="file" id="archivo" accept=".csv,.txt,.tsv"></label></div>
+    <div class="fila">
+      <label>Variable a analizar <select id="sel-col"></select></label>
+      <label>Filtrar por (opcional) <select id="sel-filtro-col"><option value="">Sin filtro</option></select></label>
+      <label>Valor del filtro <select id="sel-filtro-val"></select></label>
+    </div>
+    <p id="csv-info" class="hint"></p>
+  </div>
+  <div class="fila">
+    <label>Códigos de valor perdido <input id="perdidos" value="99; -1"><span class="hint">Borrá el 99 si en tu variable es un dato válido.</span></label>
+    <label>Los datos son <select id="sel-pob"><option value="muestra">Una muestra (divide entre N − 1)</option><option value="poblacion">Una población (divide entre N)</option></select></label>
+    <button id="btn-analizar" class="prim">Analizar</button>
+  </div>
+  <p id="estado-datos" class="estado" aria-live="polite"></p>
+</section>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="resumen" class="on">Resumen</button>
+  <button data-tab="frecuencias">Tabla de frecuencias</button>
+  <button data-tab="tallo">Tallo y hojas</button>
+  <button data-tab="z">Puntajes z</button>
+  <button data-tab="normal">Curva normal</button>
+  <button data-tab="escalas">Escalas</button>
+  <button data-tab="ponderada">Media ponderada</button>
+  <button data-tab="ajustes">Ajustes</button>
+  <button id="o-abrir-tab" class="tab-asistente">💬 Asistente</button>
+</nav>
+
+<section class="card panel" id="p-resumen"><div class="vacio">Primero cargá los datos y tocá «Analizar».</div></section>
+
+<section class="card panel" id="p-frecuencias" hidden>
+  <h2>Tabla de frecuencias</h2>
+  <div class="fila">
+    <label>Amplitud del intervalo <input id="f-amp" placeholder="automática"></label>
+    <label>Primer límite inferior <input id="f-ini" placeholder="automático"></label>
+    <label>Último valor a cubrir <input id="f-fin" placeholder="automático"></label>
+    <label>Orden <select id="f-orden"><option value="desc">Intervalo mayor arriba</option><option value="asc">Intervalo menor arriba</option></select></label>
+    <label>Acumular <select id="f-acum"><option value="bottom_up">De abajo hacia arriba</option><option value="top_down">De arriba hacia abajo</option></select></label>
+  </div>
+  <p id="f-info" class="hint"></p>
+  <div id="f-tabla"></div>
+  <div class="botones"><button id="f-copiar">Copiar tabla</button></div>
+  <p class="hint">Las frecuencias relativas están en porcentaje, sin el símbolo.</p>
+  <h3>Percentiles con la fórmula de Pagano</h3>
+  <div class="fila">
+    <label>Percentil buscado (ej. 75) <input id="f-p" value="50"></label>
+    <label>Rango percentil de un puntaje X <input id="f-x" placeholder="ej. 72"></label>
+  </div>
+  <div id="f-pres"></div>
+</section>
+
+<section class="card panel" id="p-tallo" hidden>
+  <h2>Diagrama de tallo y hojas</h2>
+  <div class="fila"><label>Tipo <select id="t-tipo"><option value="dividido">Dividido (2 tallos por decena)</option><option value="estandar">Estándar (1 tallo por decena)</option></select></label></div>
+  <div id="t-diag"></div>
+  <h3>Buscar una hoja</h3>
+  <div class="fila">
+    <label>Tallo (la decena, ej. 7 para los setentas) <input id="t-dec" inputmode="numeric"></label>
+    <label>Cuál tallo <select id="t-num"><option value="1">Primero (hojas 0 a 4)</option><option value="2">Segundo (hojas 5 a 9)</option></select></label>
+    <label>Posición de la hoja <select id="t-pos"><option value="primera">Primera</option><option value="segunda">Segunda</option><option value="tercera">Tercera</option><option value="cuarta">Cuarta</option><option value="quinta">Quinta</option><option value="ultima">Última</option><option value="unica">Única</option></select></label>
+    <button id="t-buscar">Buscar</button>
+  </div>
+  <p id="t-res" class="estado"></p>
+</section>
+
+<section class="card panel" id="p-z" hidden>
+  <h2>Puntajes z</h2>
+  <div class="fila">
+    <label>Media <input id="z-media"></label>
+    <label>Desviación estándar <input id="z-s"></label>
+  </div>
+  <div class="fila">
+    <label>De un puntaje X a z <input id="z-x" placeholder="ej. 85"></label>
+    <label>De un puntaje z a X <input id="z-z" placeholder="ej. 1,5"></label>
+  </div>
+  <div id="z-calc"></div>
+  <h3>Todos los datos convertidos a z</h3>
+  <div id="z-tabla"></div>
+  <div class="botones"><button id="z-copiar">Copiar tabla</button></div>
+</section>
+
+<section class="card panel" id="p-normal" hidden>
+  <h2>Curva normal</h2>
+  <div class="fila">
+    <label>Media <input id="n-media" placeholder="ej. 100"></label>
+    <label>Desviación estándar <input id="n-s" placeholder="ej. 15"></label>
+    <button id="n-usar">Usar los datos cargados</button>
+  </div>
+  <div class="fila">
+    <label>Tipo de pregunta <select id="n-tipo">
+      <option value="A">A · De un puntaje X a z, áreas y percentil</option>
+      <option value="B">B · Área entre dos puntajes</option>
+      <option value="C">C · De un percentil al puntaje X</option>
+      <option value="D">D · Límites del porcentaje central</option>
+    </select></label>
+    <label id="n-l1"><span id="n-t1">Puntaje X</span> <input id="n-v1"></label>
+    <label id="n-l2" hidden><span>Segundo puntaje X</span> <input id="n-v2"></label>
+  </div>
+  <div class="fila">
+    <label>Sombreado <select id="n-sombra"><option value="debajo">Por debajo</option><option value="encima">Por encima</option><option value="entre">Entre dos puntos</option><option value="fuera">Fuera de dos puntos (colas)</option></select></label>
+    <label>Título del gráfico <input id="n-titulo" value="Distribución Normal"></label>
+    <label class="check"><input type="checkbox" id="n-tabla" checked> Usar z con 2 decimales, como la tabla de Pagano</label>
+  </div>
+  <div id="n-res"></div>
+  <div id="n-graf"></div>
+  <div class="botones"><button id="n-desc">Descargar gráfico (SVG)</button></div>
+</section>
+
+<section class="card panel" id="p-escalas" hidden>
+  <h2>Escalas psicométricas</h2>
+  <h3>Recodificar un ítem inverso</h3>
+  <div class="fila">
+    <label>Valor del ítem <input id="e-x" placeholder="ej. 2"></label>
+    <label>Valor máximo de la escala <input id="e-max" value="7"></label>
+  </div>
+  <p id="e-res" class="estado"></p>
+  <h3>Crear una variable compuesta (suma de ítems)</h3>
+  <div id="e-comp"><div class="vacio">Cargá un archivo CSV en el paso 1 para sumar ítems.</div></div>
+</section>
+
+<section class="card panel" id="p-ponderada" hidden>
+  <h2>Media ponderada</h2>
+  <div class="fila">
+    <label>Valores <textarea id="w-val" rows="3" placeholder="ej. 80 90 70"></textarea></label>
+    <label>Pesos (en el mismo orden) <textarea id="w-pes" rows="3" placeholder="ej. 30 50 20"></textarea></label>
+  </div>
+  <div id="w-res"></div>
+</section>
+
+
+<section class="card panel" id="p-ajustes" hidden>
+  <h2>Ajustes de decimales</h2>
+  <p class="hint">Frecuencias, N y hojas siempre van sin decimales. Lo demás se puede ajustar si tu profe pide otra cosa.</p>
+  <div class="fila">
+    <label>Separador decimal <select id="a-sep"><option value="coma">Coma (72,5)</option><option value="punto">Punto (72.5)</option></select></label>
+  </div>
+  <div class="fila">
+    <label>Media <input id="a-media" type="number" min="0" max="6"></label>
+    <label>Mediana y moda <input id="a-centro" type="number" min="0" max="6"></label>
+    <label>Varianza, desviación, CV, z, percentiles, áreas, límites <input id="a-dos" type="number" min="0" max="6"></label>
+    <label>Frecuencias relativas <input id="a-relativa" type="number" min="0" max="6"></label>
+  </div>
+  <div class="botones"><button id="a-reset">Volver a los valores del curso</button></div>
+  <h3>Probar el redondeo por paridad</h3>
+  <div class="fila">
+    <label>Valor <input id="r-v" placeholder="ej. 14,355"></label>
+    <label>Decimales <input id="r-d" type="number" min="0" max="8" value="2"></label>
+  </div>
+  <p id="r-res" class="estado"></p>
+  <h3 id="enviar-desde">Enviar ejercicios desde otras páginas</h3>
+  <p class="hint">Arrastrá este botón a tu barra de favoritos (si no la ves: Ctrl + Shift + B). Después, en cualquier página, marcá el ejercicio con el mouse y tocá el favorito: se abre esta herramienta con el texto pegado y el asistente lo resuelve.</p>
+  <p><a id="marcador" class="boton-marcador" href="#">📤 Enviar a mi herramienta</a></p>
+  <p id="marcador-aviso" class="estado"></p>
+  <details><summary>Si no podés arrastrarlo</summary>
+    <ol class="hint">
+      <li>Tocá «Copiar código del favorito».</li>
+      <li>Clic derecho en la barra de favoritos → «Agregar página…» (en Edge: «Agregar favorito»).</li>
+      <li>En Nombre poné «Enviar a mi herramienta» y en Dirección (URL) pegá el código.</li>
+    </ol>
+    <div class="botones"><button id="marcador-copiar">Copiar código del favorito</button></div>
+  </details>
+</section>
+
+</main>
+<button id="o-abrir" class="prim fab">💬 Asistente</button>
+<aside id="asistente" class="drawer" aria-label="Asistente">
+  <div class="drawer-top"><h2>Asistente</h2><button id="o-cerrar" aria-label="Cerrar">✕</button></div>
+  <div class="fila proveedor"><label>Usar <select id="ia-proveedor"><option value="ollama">Ollama (en mi computadora, gratis)</option><option value="claude">Claude (en la nube, con clave de API)</option></select></label></div>
+  <details class="conexion" id="c-conexion" hidden><summary>Conexión con Claude <span id="c-chip" class="chip">sin clave</span></summary>
+    <div class="fila"><label>Clave de API <input id="c-clave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label></div>
+    <div class="botones"><button id="c-guardar" class="prim">Guardar clave</button><button id="c-probar">Probar conexión</button><button id="c-olvidar">Olvidar clave</button></div>
+    <div class="fila"><label>Modelo <select id="c-modelo"></select></label></div>
+    <p class="hint">La clave se guarda solo en este navegador: no queda en el archivo ni en GitHub. Se saca en console.anthropic.com → API Keys. Si usás una computadora prestada, tocá «Olvidar clave» al terminar.</p>
+  </details>
+  <details class="conexion" id="o-conexion"><summary>Conexión con Ollama <span id="o-chip" class="chip">revisando…</span></summary>
+    <div class="fila"><label>Dirección <input id="o-url" value="http://localhost:11434"></label></div>
+    <div class="fila">
+      <label>Modelo <select id="o-modelo"><option value="qwen2.5:7b">qwen2.5:7b</option></select></label>
+      <button id="o-probar">Detectar de nuevo</button>
+    </div>
+    <div id="o-info"></div>
+  </details>
+  <p id="o-estado" class="estado"></p>
+  <label class="check" id="o-agente-l" hidden><input type="checkbox" id="o-agente" checked> Modo agente: Claude mira toda la página, la maneja paso a paso y te señala la respuesta</label>
+  <label class="check"><input type="checkbox" id="o-acciones" checked> Que el asistente pase los datos del ejercicio a la página</label>
+  <label class="check"><input type="checkbox" id="o-contexto" checked> Enviarle los resultados que tengo en pantalla</label>
+  <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (desmarcalo para ir más rápido)</label>
+  <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»</div></div>
+  <div class="chat-entrada">
+    <div id="o-marcado" class="marcado-chip" hidden><span></span><button id="o-marcado-x" aria-label="Quitar texto marcado">✕</button></div>
+    <textarea id="o-msg" rows="3" placeholder="Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)"></textarea>
+    <div class="botones">
+      <button id="o-enviar" class="prim">Enviar</button>
+      <button id="o-parar" hidden>Detener</button>
+      <button id="o-limpiar">Nueva conversación</button>
+    </div>
+  </div>
+  <p class="hint" id="o-pie">El modelo corre en tu computadora. Los números los calcula la página; el modelo llena los campos y explica, y puede equivocarse al interpretar el ejercicio: revisá los datos que puso.</p>
+</aside>
+<footer class="wrap">Basado en Pagano, <i>Estadística para las ciencias del comportamiento</i>. Los cálculos se hacen en tu navegador. Con Ollama nada sale de tu computadora; si usás el asistente con Claude, tus mensajes y los resultados en pantalla se envían a Anthropic.</footer>
+
+<script>
+/* ================== NÚCLEO DE CÁLCULO ================== */
+
+/* ---------- BLOQUE 0: utilidades y formateador ---------- */
+function redondearParidadDetalle(valor, decimales){
+  if(valor===null||valor===undefined||!isFinite(valor)) return {valor, motivo:''};
+  const neg = valor < 0;
+  const s = Math.abs(valor).toFixed(12);
+  let [ent, frac=''] = s.split('.');
+  frac = frac.replace(/0+$/,'');
+  if(frac.length <= decimales){
+    const v = Number(s);
+    return {valor: neg ? -v : v, motivo:'No hay cifras que eliminar.'};
+  }
+  const corte = Number(frac[decimales]);
+  const resto = frac.slice(decimales+1);
+  const base = ent + frac.slice(0,decimales);
+  const anterior = Number(base[base.length-1]);
+  let subir = false, motivo = '';
+  if(corte < 5){ motivo = `El primer dígito que se elimina es ${corte} (menor que 5): la última cifra se queda igual.`; }
+  else if(corte > 5){ subir = true; motivo = `El primer dígito que se elimina es ${corte} (mayor que 5): se suma 1.`; }
+  else if(/[1-9]/.test(resto)){ subir = true; motivo = `El primer dígito que se elimina es 5 y después hay más cifras distintas de cero: se suma 1.`; }
+  else if(anterior % 2 === 0){ motivo = `El dígito que se elimina es exactamente 5 y la cifra anterior (${anterior}) es par: se queda igual.`; }
+  else { subir = true; motivo = `El dígito que se elimina es exactamente 5 y la cifra anterior (${anterior}) es impar: sube al par siguiente.`; }
+  let n = BigInt(base);
+  if(subir) n += 1n;
+  const str = n.toString().padStart(decimales+1,'0');
+  const r = decimales > 0 ? str.slice(0,str.length-decimales)+'.'+str.slice(str.length-decimales) : str;
+  let out = Number(r);
+  if(neg && out !== 0) out = -out;
+  return {valor: out, motivo};
+}
+function redondearParidad(valor, decimales){ return redondearParidadDetalle(valor, decimales).valor; }
+
+const AJUSTES_DEF = {media:1, centro:0, dos:2, relativa:2, separador:'coma'};
+let ajustes = {...AJUSTES_DEF};
+const TIPOS = {
+  frecuencia:()=>0, n:()=>0, hoja:()=>0,
+  mediana:()=>ajustes.centro, moda:()=>ajustes.centro,
+  media:()=>ajustes.media,
+  varianza:()=>ajustes.dos, desviacion:()=>ajustes.dos, cv:()=>ajustes.dos, z:()=>ajustes.dos,
+  percentil:()=>ajustes.dos, area:()=>ajustes.dos, limite:()=>ajustes.dos, cuartil:()=>ajustes.dos, dato:()=>ajustes.dos,
+  relativa:()=>ajustes.relativa
+};
+const SEP = () => ajustes.separador==='punto' ? '.' : ',';
+function decimalesPara(tipo){ const f = TIPOS[tipo]; return f ? f() : 2; }
+
+function formatearRespuestaExamen(valor, tipo){
+  if(valor===null||valor===undefined||Number.isNaN(valor)||!isFinite(valor)) return '—';
+  const d = decimalesPara(tipo);
+  let r = redondearParidad(valor, d);
+  if(Object.is(r,-0)) r = 0;
+  return r.toFixed(d).replace('.', SEP());
+}
+const fmt = formatearRespuestaExamen;
+/* Para mostrar valores intermedios en los pasos (sin redondeo de examen) */
+function fmtPaso(v, d=4){
+  if(v===null||v===undefined||!isFinite(v)) return '—';
+  return String(Number(v.toFixed(d))).replace('.', SEP());
+}
+function fmtDec(v, dec){ return Number(v).toFixed(dec).replace('.', SEP()); }
+
+function parseNum(t){
+  if(t===null||t===undefined) return null;
+  t = String(t).trim().replace(/^"|"$/g,'');
+  if(t==='') return null;
+  t = t.replace(/\s/g,'').replace(',', '.');
+  if(!/^[-+]?(\d+\.?\d*|\.\d+)(e[-+]?\d+)?$/i.test(t)) return NaN;
+  return Number(t);
+}
+function parseLista(texto){
+  const out = [];
+  const tokens = texto.split(/[\s;|]+/).filter(Boolean);
+  for(let tk of tokens){
+    tk = tk.replace(/^,+|,+$/g,'');
+    if(!tk) continue;
+    if(/^[-+]?\d+,\d+$/.test(tk)) out.push(parseNum(tk));
+    else if(tk.includes(',')) tk.split(',').filter(Boolean).forEach(p=>out.push(parseNum(p)));
+    else out.push(parseNum(tk));
+  }
+  return out;
+}
+function limpiarDatos(datos, valoresPerdidos=[99,-1,null]){
+  const limpios = []; let eliminados = 0;
+  for(const v of datos){
+    if(v===null||v===undefined||Number.isNaN(v)||valoresPerdidos.some(p=>p!==null&&p===v)){ eliminados++; continue; }
+    limpios.push(v);
+  }
+  return {datos:limpios, N:limpios.length, eliminados};
+}
+const limpio = x => Number(x.toFixed(10));
+const suma = a => a.reduce((s,v)=>s+v,0);
+const ordenar = d => [...d].sort((a,b)=>a-b);
+function decimalesDe(datos){
+  let m = 0;
+  for(const v of datos){ const s = String(v); if(s.includes('e')) continue; const i = s.indexOf('.'); if(i>=0) m = Math.max(m, s.length-i-1); }
+  return Math.min(m, 6);
+}
+
+/* ---------- BLOQUE 1: escalas psicométricas ---------- */
+function recodificarReverso(valor, maxEscala=7){ return (maxEscala + 1) - valor; }
+function calcularVariableCompuesta(csv, columnasItems, invertidos, maxEscala, nombreSalida, perdidos){
+  const vals = csv.filas.map(f=>{
+    let s = 0;
+    for(const j of columnasItems){
+      let v = parseNum(f[j]);
+      if(v===null||Number.isNaN(v)||perdidos.includes(v)) return null;
+      if(invertidos.includes(j)) v = recodificarReverso(v, maxEscala);
+      s += v;
+    }
+    return s;
+  });
+  let col = csv.enc.indexOf(nombreSalida);
+  if(col < 0){ csv.enc.push(nombreSalida); col = csv.enc.length-1; }
+  csv.filas.forEach((f,i)=>{ f[col] = vals[i]===null ? '' : String(vals[i]).replace('.', csv.del===';' ? ',' : '.'); });
+  return vals;
+}
+
+/* ---------- BLOQUE 2: tabla de frecuencias ---------- */
+function amplitudConveniente(rango, unidad){
+  const objetivo = rango / 10;
+  const base = [1,2,3,5,10,15,20,25,30,40,50,75,100,150,200,250,500,1000,2000,5000];
+  for(const b of base){ const a = limpio(b*unidad); if(a >= objetivo && a > 0) return a; }
+  return limpio(Math.ceil(objetivo/unidad/5)*5*unidad);
+}
+function generarTablaFrecuencias(datos, op={}){
+  const dec = decimalesDe(datos), u = limpio(Math.pow(10,-dec));
+  const min = Math.min(...datos), max = Math.max(...datos);
+  const i = (op.amplitud && op.amplitud > 0) ? op.amplitud : amplitudConveniente(max-min, u);
+  const ini = (op.inicio!==null && op.inicio!==undefined) ? op.inicio : limpio(Math.floor(min/i)*i);
+  const fin = (op.fin!==null && op.fin!==undefined) ? op.fin : max;
+  const filas = [];
+  for(let k=0; k<2000; k++){
+    const li = limpio(ini + k*i);
+    if(li > fin) break;
+    filas.push({li, ls:limpio(li+i-u), lri:limpio(li-u/2), lrs:limpio(li+i-u/2), pm:limpio(li+(i-u)/2), f:0});
+  }
+  let fuera = 0;
+  for(const x of datos){
+    const k = Math.floor(limpio((x-ini)/i));
+    if(k>=0 && k<filas.length) filas[k].f++; else fuera++;
+  }
+  const N = filas.reduce((s,r)=>s+r.f, 0);
+  let c = 0; for(const r of filas){ c += r.f; r.Fbu = c; }
+  c = 0; for(let k=filas.length-1; k>=0; k--){ c += filas[k].f; filas[k].Ftd = c; }
+  const orden = op.orden || 'desc', acum = op.acumulacion || 'bottom_up';
+  /* "de abajo hacia arriba" depende de qué intervalo quede abajo en la tabla mostrada */
+  const acumulaDesdeBajo = (orden==='desc') === (acum==='bottom_up');
+  filas.forEach(r=>{
+    r.F = acumulaDesdeBajo ? r.Fbu : r.Ftd;
+    r.fr = N ? r.f/N*100 : 0;
+    r.Fr = N ? r.F/N*100 : 0;
+  });
+  const mostradas = orden==='asc' ? filas : [...filas].reverse();
+  return {filas, mostradas, i, ini, u, N, fuera, dec, orden, acumulacion:acum, acumulaDesdeBajo};
+}
+
+/* ---------- BLOQUE 3: tendencia central ---------- */
+function calcularMedia(d){ return suma(d)/d.length; }
+function calcularMedianaManual(d){
+  const o = ordenar(d), n = o.length;
+  if(!n) return NaN;
+  return n%2 ? o[(n-1)/2] : (o[n/2-1]+o[n/2])/2;
+}
+function calcularModaManual(d){
+  const m = new Map();
+  d.forEach(v=>m.set(v,(m.get(v)||0)+1));
+  const max = Math.max(...m.values());
+  const modas = [...m.entries()].filter(([,f])=>f===max).map(([v])=>v).sort((a,b)=>a-b);
+  let tipo;
+  if(m.size===1) tipo = 'Unimodal';
+  else if(max===1 || modas.length===m.size) tipo = 'Amodal';
+  else if(modas.length===1) tipo = 'Unimodal';
+  else if(modas.length===2) tipo = 'Bimodal';
+  else tipo = 'Multimodal';
+  return {tipo, modas: tipo==='Amodal' ? [] : modas, frecuencia:max};
+}
+function calcularMediaPonderada(valores, pesos){
+  let sp = 0, sw = 0;
+  valores.forEach((v,k)=>{ sp += v*pesos[k]; sw += pesos[k]; });
+  return {valor: sp/sw, sumaProductos:sp, sumaPesos:sw};
+}
+
+/* ---------- BLOQUE 4: posición relativa ---------- */
+function calcularCuartilesPractico(d){
+  const o = ordenar(d), n = o.length, res = {};
+  [1,2,3].forEach(k=>{
+    const pos = k*(n+1)/4;
+    let val;
+    if(pos <= 1) val = o[0];
+    else if(pos >= n) val = o[n-1];
+    else { const i = Math.floor(pos), fr = pos-i; val = o[i-1] + fr*(o[i]-o[i-1]); }
+    res['Q'+k] = {pos, val};
+  });
+  return res;
+}
+function calcularPercentilPagano(tabla, p){
+  const {filas, N, i} = tabla;
+  const objetivo = p/100*N;
+  let fila = null;
+  for(const r of filas){ if(r.f>0 && r.Fbu >= objetivo-1e-9){ fila = r; break; } }
+  if(!fila) fila = filas[filas.length-1];
+  const debajo = fila.Fbu - fila.f;
+  const valor = fila.lri + (i/fila.f)*(objetivo-debajo);
+  const objetivoArriba = (100-p)/100*N;
+  const arriba = N - fila.Fbu;
+  return {valor, objetivo, objetivoArriba, fila, debajo, arriba, i, N};
+}
+function calcularRangoPercentil(tabla, x){
+  const {filas, N, i} = tabla;
+  const fila = filas.find(r=>x>=r.lri && x<r.lrs) || (Math.abs(x-filas[filas.length-1].lrs)<1e-9 ? filas[filas.length-1] : null);
+  if(!fila) return null;
+  const debajo = fila.Fbu - fila.f;
+  const dentro = (fila.f/i)*(x-fila.lri);
+  return {pr:(debajo+dentro)/N*100, fila, debajo, dentro, i, N};
+}
+
+/* ---------- BLOQUE 5: dispersión, forma y z ---------- */
+function calcularVarianzaDesviacion(d, esPoblacion=false){
+  const n = d.length, m = calcularMedia(d);
+  const sc = suma(d.map(v=>(v-m)**2));
+  const div = esPoblacion ? n : n-1;
+  const v = sc/div;
+  return {varianza:v, desviacion:Math.sqrt(v), sc, div, media:m};
+}
+function calcularCoeficienteVariacion(desv, media){ return desv/media*100; }
+function evaluarAsimetria(media, mediana){
+  const dif = media - mediana;
+  if(Math.abs(dif) <= 1e-9*Math.max(1,Math.abs(media))) return 'Simétrica';
+  return dif > 0 ? 'Asimetría positiva' : 'Asimetría negativa';
+}
+function convertirAPuntajesZ(d, esPoblacion=false){
+  const {media, desviacion} = calcularVarianzaDesviacion(d, esPoblacion);
+  return d.map(x=>(x-media)/desviacion);
+}
+
+/* ---------- BLOQUE 6: tallo y hojas ---------- */
+function generarTalloHojas(datos, tipo='dividido'){
+  if(datos.some(v=>!Number.isInteger(v)||v<0)) return {error:'El tallo y hojas necesita datos enteros y positivos (el tallo es la decena y la hoja es la unidad).'};
+  const o = ordenar(datos);
+  const minD = Math.floor(o[0]/10), maxD = Math.floor(o[o.length-1]/10);
+  const filas = [];
+  for(let d=minD; d<=maxD; d++){
+    if(tipo==='estandar') filas.push({decena:d, tallo:1, rango:'0–9', hojas:[]});
+    else { filas.push({decena:d, tallo:1, rango:'0–4', hojas:[]}); filas.push({decena:d, tallo:2, rango:'5–9', hojas:[]}); }
+  }
+  for(const v of o){
+    const d = Math.floor(v/10), h = v%10;
+    const t = tipo==='estandar' ? 1 : (h<5 ? 1 : 2);
+    filas.find(f=>f.decena===d && f.tallo===t).hojas.push(h);
+  }
+  while(filas.length && !filas[0].hojas.length) filas.shift();
+  while(filas.length && !filas[filas.length-1].hojas.length) filas.pop();
+  return {tipo, filas};
+}
+function consultarHoja(diagrama, decena, numTallo, posicion){
+  const f = diagrama.filas.find(r=>r.decena===decena && r.tallo===numTallo);
+  if(!f) return {error:'Ese tallo no aparece en el diagrama.'};
+  const h = f.hojas;
+  if(!h.length) return {error:'Ese tallo no tiene hojas.'};
+  const mapa = {primera:0, segunda:1, tercera:2, cuarta:3, quinta:4};
+  let idx;
+  if(posicion==='ultima') idx = h.length-1;
+  else if(posicion==='unica'){ if(h.length!==1) return {error:`Ese tallo tiene ${h.length} hojas, no una única.`}; idx = 0; }
+  else idx = mapa[posicion];
+  if(idx >= h.length) return {error:`Ese tallo solo tiene ${h.length} hoja(s).`};
+  return {hoja:h[idx], valor:decena*10+h[idx], hojas:h};
+}
+
+/* ---------- BLOQUE 7: curva normal ---------- */
+function phi(z){
+  /* Distribución normal acumulada (Abramowitz y Stegun 26.2.17, error < 0,0000001) */
+  const t = 1/(1+0.2316419*Math.abs(z));
+  const d = 0.3989422804014327*Math.exp(-z*z/2);
+  const p = d*t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+  return z > 0 ? 1-p : p;
+}
+function invPhi(p){
+  const a=[-3.969683028665376e+01,2.209460984245205e+02,-2.759285104469687e+02,1.383577518672690e+02,-3.066479806614716e+01,2.506628277459239e+00];
+  const b=[-5.447609879822406e+01,1.615858368580409e+02,-1.556989798598866e+02,6.680131188771972e+01,-1.328068155288572e+01];
+  const c=[-7.784894002430293e-03,-3.223964580411365e-01,-2.400758277161838e+00,-2.549732539343734e+00,4.374664141464968e+00,2.938163982698783e+00];
+  const d=[7.784695709041462e-03,3.224671290700398e-01,2.445134137142996e+00,3.754408661907416e+00];
+  const pl = 0.02425, ph = 1-pl; let q, r;
+  if(p < pl){ q = Math.sqrt(-2*Math.log(p)); return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1); }
+  if(p <= ph){ q = p-0.5; r = q*q; return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q/(((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1); }
+  q = Math.sqrt(-2*Math.log(1-p));
+  return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5])/((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+}
+/* Con modoTabla se imita la tabla de Pagano: z con 2 decimales */
+function zDesdeProporcion(p, modoTabla){
+  if(!modoTabla) return invPhi(p);
+  let mejor = 0, dif = Infinity;
+  for(let k=-400; k<=400; k++){ const z = k/100, d = Math.abs(phi(z)-p); if(d < dif-1e-12){ dif = d; mejor = z; } }
+  return mejor;
+}
+function calcularPuntajeZ(x, media, desv){ return (x-media)/desv; }
+function obtenerDatoBrutoDesdeZ(z, media, desv){ return media + z*desv; }
+function calcularAreaYPercentilNormal(x, media, desv, modoTabla=true){
+  const z = calcularPuntajeZ(x, media, desv);
+  const zu = modoTabla ? redondearParidad(z,2) : z;
+  /* En modo tabla se usa el área entre la media y z con 4 decimales, como viene impresa en la tabla de Pagano */
+  let entre = Math.abs(phi(zu)-0.5);
+  if(modoTabla) entre = Math.round(entre*1e4)/1e4;
+  const debajo = zu >= 0 ? 0.5 + entre : 0.5 - entre;
+  return {z, zUsado:zu, debajo:debajo*100, encima:(1-debajo)*100, entreMedia:entre*100, percentil:debajo*100};
+}
+function calcularAreaEntreDosPuntos(x1, x2, media, desv, modoTabla=true){
+  const a = calcularAreaYPercentilNormal(x1, media, desv, modoTabla);
+  const b = calcularAreaYPercentilNormal(x2, media, desv, modoTabla);
+  return {a, b, area:Math.abs(b.debajo-a.debajo)};
+}
+function obtenerDatoBrutoDesdePercentil(pct, media, desv, modoTabla=true){
+  const p = pct/100;
+  if(!(p>0 && p<1)) return null;
+  const z = zDesdeProporcion(p, modoTabla);
+  return {z, x:obtenerDatoBrutoDesdeZ(z, media, desv), areaTabla:phi(z)*100};
+}
+function obtenerLimitesCentralesNormal(pctCentral, media, desv, modoTabla=true){
+  if(!(pctCentral>0 && pctCentral<100)) return null;
+  const cola = (100-pctCentral)/2;
+  const z = zDesdeProporcion(1-cola/100, modoTabla);
+  return {cola, z, inferior:media-z*desv, superior:media+z*desv};
+}
+
+/* ================== INTERFAZ ================== */
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const numOrNull = t => { const v = parseNum(t); return (v===null||Number.isNaN(v)) ? null : v; };
+const est = {fuente:'enunciado', csv:null, datos:[], etiqueta:'', pob:false, tabla:null, diagrama:null};
+
+try{ const g = JSON.parse(localStorage.getItem('ed_ajustes')); if(g) ajustes = {...ajustes, ...g}; }catch(e){}
+
+/* ---------- pestañas ---------- */
+$$('#tabs button[data-tab]').forEach(b => b.onclick = () => {
+  $$('#tabs button[data-tab]').forEach(x => x.classList.toggle('on', x===b));
+  $$('.panel').forEach(p => p.hidden = p.id !== 'p-'+b.dataset.tab);
+});
+
+/* ---------- fuente de datos ---------- */
+$$('[data-fuente]').forEach(b => b.onclick = () => {
+  $$('[data-fuente]').forEach(x => x.classList.toggle('on', x===b));
+  est.fuente = b.dataset.fuente;
+  $('#fuente-pegar').hidden = est.fuente !== 'pegar';
+  $('#fuente-enunciado').hidden = est.fuente !== 'enunciado';
+  $('#fuente-csv').hidden = est.fuente !== 'csv';
+});
+
+function splitLinea(l, del){
+  const out = []; let cur = '', q = false;
+  for(let i=0; i<l.length; i++){
+    const ch = l[i];
+    if(ch==='"'){ if(q && l[i+1]==='"'){ cur+='"'; i++; } else q = !q; }
+    else if(ch===del && !q){ out.push(cur); cur=''; }
+    else cur += ch;
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+function parseCSV(texto){
+  texto = texto.replace(/^﻿/, '');
+  const lineas = texto.split(/\r?\n/).filter(l => l.trim()!=='');
+  const prim = lineas[0] || '';
+  const cuenta = c => prim.split(c).length-1;
+  let del = ',';
+  if(cuenta(';') > cuenta(',') && cuenta(';') >= cuenta('\t')) del = ';';
+  else if(cuenta('\t') > cuenta(',')) del = '\t';
+  const enc = splitLinea(prim, del);
+  const filas = lineas.slice(1).map(l => splitLinea(l, del));
+  return {enc, filas, del};
+}
+function columnasNumericas(csv){
+  return csv.enc.map((h,j) => {
+    let n = 0, ok = 0;
+    for(const f of csv.filas){ const v = f[j]; if(v===undefined||v==='') continue; n++; if(!Number.isNaN(parseNum(v))) ok++; }
+    return {h, j, num: n>0 && ok/n >= 0.9};
+  });
+}
+function llenarSelectoresCSV(seleccionar){
+  const cols = columnasNumericas(est.csv);
+  const prev = seleccionar ?? $('#sel-col').value;
+  $('#sel-col').innerHTML = cols.filter(c=>c.num).map(c => `<option value="${c.j}">${esc(c.h)}</option>`).join('');
+  if(prev!=='' && prev!==undefined && $(`#sel-col option[value="${prev}"]`)) $('#sel-col').value = prev;
+  const prevF = $('#sel-filtro-col').value;
+  $('#sel-filtro-col').innerHTML = '<option value="">Sin filtro</option>' + cols.map(c => `<option value="${c.j}">${esc(c.h)}</option>`).join('');
+  $('#sel-filtro-col').value = prevF;
+  llenarValoresFiltro();
+  renderComposite();
+}
+function llenarValoresFiltro(){
+  const j = $('#sel-filtro-col').value;
+  if(j===''){ $('#sel-filtro-val').innerHTML = ''; $('#sel-filtro-val').disabled = true; return; }
+  const vals = [...new Set(est.csv.filas.map(f => f[j]).filter(v => v!==undefined && v!==''))].sort((a,b)=>{ const x=parseNum(a), y=parseNum(b); return (!Number.isNaN(x)&&!Number.isNaN(y)&&x!==null&&y!==null) ? x-y : String(a).localeCompare(b); });
+  $('#sel-filtro-val').disabled = false;
+  $('#sel-filtro-val').innerHTML = vals.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+}
+$('#sel-filtro-col').onchange = llenarValoresFiltro;
+$('#archivo').onchange = e => {
+  const f = e.target.files[0]; if(!f) return;
+  const rd = new FileReader();
+  rd.onload = () => {
+    est.csv = parseCSV(rd.result);
+    llenarSelectoresCSV('');
+    const nNum = columnasNumericas(est.csv).filter(c=>c.num).length;
+    $('#csv-info').textContent = `${f.name}: ${est.csv.filas.length} filas y ${est.csv.enc.length} columnas (${nNum} numéricas).`;
+  };
+  rd.readAsText(f, 'utf-8');
+};
+
+function codigosPerdidos(){ return $('#perdidos').value.split(/[;\s]+/).map(parseNum).filter(v => v!==null && !Number.isNaN(v)); }
+
+function obtenerCrudos(){
+  if(est.fuente==='pegar') return {crudos: parseLista($('#txt-datos').value), etiqueta:'Datos pegados'};
+  if(est.fuente==='enunciado') return {crudos: leerEnunciado($('#txt-enunciado').value).datos, etiqueta:'Datos del enunciado'};
+  if(!est.csv) return {error:'Primero elegí un archivo CSV.'};
+  const j = $('#sel-col').value;
+  if(j==='') return {error:'El archivo no tiene columnas numéricas.'};
+  let filas = est.csv.filas, etiqueta = est.csv.enc[j];
+  const fj = $('#sel-filtro-col').value;
+  if(fj!==''){ const fv = $('#sel-filtro-val').value; filas = filas.filter(f => f[fj]===fv); etiqueta += ` (${est.csv.enc[fj]} = ${fv})`; }
+  return {crudos: filas.map(f => parseNum(f[j])), etiqueta};
+}
+
+$('#btn-analizar').onclick = analizar;
+function analizar(){
+  const o = obtenerCrudos(), st = $('#estado-datos');
+  if(o.error){ st.className = 'estado err'; st.textContent = o.error; return; }
+  const r = limpiarDatos(o.crudos, codigosPerdidos());
+  if(r.N < 2){ st.className = 'estado err'; st.textContent = 'Se necesitan al menos 2 datos numéricos válidos.'; return; }
+  est.datos = r.datos; est.etiqueta = o.etiqueta; est.pob = $('#sel-pob').value==='poblacion';
+  st.className = 'estado ok';
+  st.textContent = `${o.etiqueta}: ${r.N} datos válidos` + (r.eliminados ? ` · ${r.eliminados} se quitaron por ser vacíos o códigos de valor perdido.` : '.');
+  const vd = calcularVarianzaDesviacion(est.datos, est.pob);
+  $('#z-media').value = fmtPaso(vd.media, 6); $('#z-s').value = fmtPaso(vd.desviacion, 6);
+  renderTodo();
+}
+$('#sel-pob').onchange = () => { if(est.datos.length) analizar(); };
+
+function renderTodo(){
+  if(!est.datos.length) return;
+  renderResumen(); renderFrecuencias(); renderTallo(); renderZ();
+}
+
+/* ---------- LECTOR DE ENUNCIADOS ---------- */
+const NUMRX = '(-?\\d+(?:[.,]\\d+)?)';
+const sinTildes = s => s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+function leerEnunciado(texto){
+  const r = {datos:[]};
+  /* Datos: las líneas que solo tienen números */
+  for(const l of texto.split(/\r?\n/)){
+    const s = l.trim();
+    if(/^[-+]?\d+(?:[.,]\d+)?(?:[\s;,]+[-+]?\d+(?:[.,]\d+)?)*[;,]?$/.test(s)) r.datos.push(...parseLista(s).filter(v => v!==null && !Number.isNaN(v)));
+  }
+  /* Si no hay líneas sueltas, buscar una lista de 5 o más números seguidos */
+  if(!r.datos.length){
+    const m = texto.match(/(?:-?\d+(?:[.,]\d+)?[\s;,]+){4,}-?\d+(?:[.,]\d+)?/);
+    if(m) r.datos = parseLista(m[0]).filter(v => v!==null && !Number.isNaN(v));
+  }
+  const t = sinTildes(texto).replace(/\s+/g,' ');
+  const n = rx => { const m = t.match(rx); return m ? parseNum(m[1]) : null; };
+  r.amplitud = n(new RegExp('amplitud(?: de| igual a| =)? ' + NUMRX)) ?? n(new RegExp('intervalos? de (?:ancho|tamano) ' + NUMRX));
+  r.inicio = n(new RegExp('(?:iniciando|inicia|iniciar|comenzando|comienza|empezando|empieza|desde)(?: en| con| por| desde)?(?: el)?(?: valor| numero| puntaje| dato)? ' + NUMRX));
+  r.fin = n(new RegExp('(?:acabando|acaba|acabar|terminando|termina|terminar|finalizando|finaliza|hasta)(?: en| con)?(?: el)?(?: valor| numero| puntaje| dato)? ' + NUMRX));
+  r.nIntervalos = n(/(\d+) intervalos/);
+  /* Orden de las filas */
+  const pf = t.match(new RegExp('intervalo ' + NUMRX + ' ?[-–a] ?' + NUMRX + '(?:(?!intervalo)[^.])*?primera fila'));
+  const uf = t.match(new RegExp('intervalo ' + NUMRX + ' ?[-–a] ?' + NUMRX + '(?:(?!intervalo)[^.])*?ultima fila'));
+  if(pf && uf) r.orden = parseNum(pf[1]) > parseNum(uf[1]) ? 'desc' : 'asc';
+  else if(pf && r.inicio!==null) r.orden = parseNum(pf[1]) > r.inicio ? 'desc' : 'asc';
+  else if(/de mayor a menor/.test(t)) r.orden = 'desc';
+  else if(/de menor a mayor/.test(t)) r.orden = 'asc';
+  /* Acumulación */
+  if(/de abajo hacia arriba|de abajo para arriba/.test(t)) r.acumulacion = 'bottom_up';
+  else if(/de arriba hacia abajo|de arriba para abajo/.test(t)) r.acumulacion = 'top_down';
+  /* Separador decimal */
+  const sep = t.match(/decimales? (?:con|usando|utilizando) (punto|coma)|(punto|coma) decimal|separador decimal (?:es |sea )?(?:el |la )?(punto|coma)/);
+  if(sep) r.separador = sep[1] || sep[2] || sep[3];
+  /* Otros pedidos */
+  r.percentil = n(new RegExp('(?:el |calcule el |obtenga el )?percentil ' + NUMRX));
+  r.rango = n(new RegExp('rango percentil (?:del?|para)? ?(?:el |un )?(?:puntaje|valor|dato|nota)? ?(?:de )?' + NUMRX));
+  if(r.rango!==null && r.percentil!==null && t.indexOf('rango percentil')>=0 && t.match(/percentil/g).length===1) r.percentil = null;
+  if(/poblacion/.test(t)) r.tipo = 'poblacion'; else if(/muestra/.test(t)) r.tipo = 'muestra';
+  r.esTabla = /distribucion de frecuencias|tabla de frecuencias|intervalos/.test(t) || r.amplitud!==null;
+  return r;
+}
+function aplicarEnunciado(e){
+  const lista = [];
+  const ok = (txt) => lista.push(`<li>✓ ${txt}</li>`), no = (txt) => lista.push(`<li class="no">⚠ ${txt}</li>`);
+  if(!e.datos.length){ no('No encontré los datos. Ponelos en líneas que tengan solo números.'); return {html:`<ul class="entendido">${lista.join('')}</ul>`, texto:'No se encontraron los datos en el enunciado.'}; }
+  if(e.separador){ ajustes.separador = e.separador; $('#a-sep').value = e.separador; try{ localStorage.setItem('ed_ajustes', JSON.stringify(ajustes)); }catch(er){} }
+  const dec = decimalesDe(e.datos);
+  ok(`${e.datos.length} datos: ${e.datos.map(v => fmtDec(v,dec)).join(' ')}`);
+  $('#f-amp').value = e.amplitud!==null ? fmtPaso(e.amplitud) : '';
+  $('#f-ini').value = e.inicio!==null ? fmtPaso(e.inicio) : '';
+  $('#f-fin').value = e.fin!==null ? fmtPaso(e.fin) : '';
+  if(e.amplitud!==null) ok(`Amplitud: ${fmtPaso(e.amplitud)}`); else if(e.esTabla) no('No dice la amplitud: uso una automática.');
+  if(e.inicio!==null) ok(`Primer límite inferior: ${fmtPaso(e.inicio)}`);
+  if(e.fin!==null) ok(`Último valor: ${fmtPaso(e.fin)}`);
+  $('#f-orden').value = e.orden || 'desc';
+  ok(e.orden ? (e.orden==='desc' ? 'Intervalo mayor en la primera fila' : 'Intervalo menor en la primera fila') : 'Orden: no lo dice, uso el intervalo mayor arriba');
+  $('#f-acum').value = e.acumulacion || 'bottom_up';
+  ok(e.acumulacion ? (e.acumulacion==='bottom_up' ? 'Acumular de abajo hacia arriba' : 'Acumular de arriba hacia abajo') : 'Acumulación: no lo dice, uso de abajo hacia arriba');
+  if(e.separador) ok(`Decimales con ${e.separador}`);
+  if(e.percentil!==null){ $('#f-p').value = fmtPaso(e.percentil); ok(`Percentil ${fmtPaso(e.percentil)}`); }
+  if(e.rango!==null){ $('#f-x').value = fmtPaso(e.rango); ok(`Rango percentil del puntaje ${fmtPaso(e.rango)}`); }
+  if(e.tipo){ $('#sel-pob').value = e.tipo; ok(e.tipo==='poblacion' ? 'Son una población' : 'Son una muestra'); }
+  /* Cargar y calcular */
+  $('[data-fuente="enunciado"]').click();
+  analizar();
+  const t = est.tabla;
+  if(t && e.nIntervalos!==null && t.filas.length!==e.nIntervalos) no(`El enunciado pide ${e.nIntervalos} intervalos, pero con esa amplitud, inicio y fin salen ${t.filas.length}. Revisá los datos del enunciado.`);
+  else if(t && e.nIntervalos!==null) ok(`${e.nIntervalos} intervalos, como pide el enunciado`);
+  if(t && t.fuera) no(`${t.fuera} dato(s) quedan fuera de los intervalos pedidos.`);
+  irA(e.esTabla ? 'frecuencias' : 'resumen');
+  const html = `<ul class="entendido">${lista.join('')}</ul>`;
+  const texto = lista.map(l => l.replace(/<[^>]+>/g,'')).join('\n') + '\n' + (e.esTabla ? 'Resultado en la pestaña Tabla de frecuencias:\n' + textoTabla() + (textoPlano($('#f-pres')) ? '\nPercentiles:\n' + textoPlano($('#f-pres')) : '') : textoResumen());
+  return {html, texto};
+}
+$('#btn-enunciado').onclick = () => {
+  const txt = $('#txt-enunciado').value, e = leerEnunciado(txt), nor = leerNormal(txt);
+  if(nor && !(e.esTabla && e.datos.length)){ $('#enunciado-res').innerHTML = aplicarNormal(nor).html; return; }
+  $('#enunciado-res').innerHTML = aplicarEnunciado(e).html;
+};
+
+/* ---------- LECTOR DE ENUNCIADOS DE CURVA NORMAL Y PUNTAJES Z ---------- */
+function leerNormal(texto){
+  const t = sinTildes(texto).replace(/\s+/g,' ');
+  const num = rx => { const m = t.match(rx); return m ? parseNum(m[1]) : null; };
+  const media = num(new RegExp('(?:media|promedio|\\bmu\\b|μ)[^0-9]{0,30}?' + NUMRX));
+  const desv = num(new RegExp('(?:desviacion (?:estandar|tipica)|desvio estandar|\\bsigma\\b|σ)[^0-9]{0,30}?' + NUMRX));
+  if(media===null || !(desv>0)) return null;
+  /* Preguntas: líneas numeradas (1. 2. 3.) o, si no hay, cada oración con signo de pregunta */
+  let preguntas = [...texto.matchAll(/(?:^|\n)\s*(\d+)\s*[.)\-]\s+([^\n]+)/g)].map(m => ({n:m[1], q:m[2].trim()}));
+  if(!preguntas.length) preguntas = (texto.match(/¿[^?]+\?/g) || []).map((q,i) => ({n:String(i+1), q}));
+  const respuestas = preguntas.map(p => resolverPreguntaNormal(p, media, desv)).filter(Boolean);
+  return {media, desv, respuestas};
+}
+function resolverPreguntaNormal({n, q}, m, s){
+  const qt = sinTildes(q);
+  const nums = (qt.match(/-?\d+(?:[.,]\d+)?/g) || []).map(parseNum).filter(v => v!==null && !Number.isNaN(v));
+  const tb = $('#n-tabla').checked;
+  const pideProporcion = /proporcion|probabilidad/.test(qt);
+  const conProp = v => pideProporcion ? ` (como proporción: ${fmtPaso(v/100, 4)})` : '';
+  const R = (tipo, valorTxt, detalle, grafico) => ({n, pregunta:q, tipo, valorTxt, detalle, grafico});
+  if(!nums.length) return R('?', '—', 'No encontré un número en esta pregunta.', null);
+  if(/entre/.test(qt) && nums.length >= 2){
+    const [a, b] = nums, r = calcularAreaEntreDosPuntos(a, b, m, s, tb);
+    return R('B', fmt(r.area,'area'), `Área entre ${fmtPaso(a)} (z = ${fmt(r.a.zUsado,'z')}) y ${fmtPaso(b)} (z = ${fmt(r.b.zUsado,'z')})${conProp(r.area)}`, {tipo:'B', valor1:a, valor2:b, sombreado:'entre'});
+  }
+  if(/central|del centro|en el centro/.test(qt)){
+    const r = obtenerLimitesCentralesNormal(nums[0], m, s, tb);
+    if(!r) return R('D', '—', 'El porcentaje central tiene que estar entre 0 y 100.', null);
+    return R('D', `${fmt(r.inferior,'limite')} y ${fmt(r.superior,'limite')}`, `Límites que encierran el ${fmtPaso(nums[0])} central (z = ±${fmt(r.z,'z')})`, {tipo:'D', valor1:nums[0], sombreado:'entre'});
+  }
+  if(/rango percentil/.test(qt)){
+    const r = calcularAreaYPercentilNormal(nums[0], m, s, tb);
+    return R('A', fmt(r.percentil,'percentil'), `Rango percentil de ${fmtPaso(nums[0])} (z = ${fmt(r.zUsado,'z')})`, {tipo:'A', valor1:nums[0], sombreado:'debajo'});
+  }
+  if(/percentil|deja por debajo|deja debajo|supera al/.test(qt)){
+    const r = obtenerDatoBrutoDesdePercentil(nums[0], m, s, tb);
+    if(!r) return R('C', '—', 'El percentil tiene que estar entre 0 y 100.', null);
+    return R('C', fmt(r.x,'percentil'), `Puntaje del percentil ${fmtPaso(nums[0])} (z = ${fmt(r.z,'z')})`, {tipo:'C', valor1:nums[0], sombreado:'debajo'});
+  }
+  if(/(?:puntaje|puntuacion|valor|calificacion|nota) (?:bruto|original|directo|real)|que (?:puntaje|calificacion|nota) (?:corresponde|tiene|obtuvo)/.test(qt) && /\bz\b/.test(qt)){
+    const mz = qt.match(new RegExp('z (?:de|=|igual a|es) ?' + NUMRX)), z = mz ? parseNum(mz[1]) : nums[nums.length-1];
+    const x = obtenerDatoBrutoDesdeZ(z, m, s);
+    return R('X', fmt(x,'dato'), `Puntaje con z = ${fmtPaso(z)}`, null);
+  }
+  if(/\bz\b|puntaje estandar|puntuacion estandar|puntaje tipico/.test(qt)){
+    const x = nums[nums.length-1], z = calcularPuntajeZ(x, m, s);
+    return R('z', fmt(z,'z'), `z de ${fmtPaso(x)}: (${fmtPaso(x)} − ${fmtPaso(m)}) ÷ ${fmtPaso(s)}`, {z:true, x});
+  }
+  const x = nums[nums.length-1], r = calcularAreaYPercentilNormal(x, m, s, tb);
+  if(/mayor|mas de|por encima|superior|al menos|o mas|supera|exced/.test(qt))
+    return R('A', fmt(r.encima,'area'), `Área por encima de ${fmtPaso(x)} (z = ${fmt(r.zUsado,'z')})${conProp(r.encima)}`, {tipo:'A', valor1:x, sombreado:'encima'});
+  if(/menor|menos de|por debajo|inferior|a lo sumo|o menos|hasta|no supera|no mas/.test(qt))
+    return R('A', fmt(r.debajo,'area'), `Área por debajo de ${fmtPaso(x)} (z = ${fmt(r.zUsado,'z')})${conProp(r.debajo)}`, {tipo:'A', valor1:x, sombreado:'debajo'});
+  return R('?', '—', 'No pude saber qué pide esta pregunta. Resolvela en la pestaña Curva normal.', null);
+}
+function aplicarNormal(nor){
+  const lis = [`<li>✓ Media: ${fmtPaso(nor.media)} · Desviación estándar: ${fmtPaso(nor.desv)}</li>`];
+  if(!nor.respuestas.length) lis.push('<li class="no">⚠ Encontré la media y la desviación, pero no las preguntas. Numeralas (1. 2. 3.) o escribilas con signos de pregunta.</li>');
+  /* Llenar la página: la última pregunta de área en Curva normal; la última de z en Puntajes z */
+  const graf = [...nor.respuestas].reverse().find(r => r.grafico && r.grafico.tipo);
+  const pz = [...nor.respuestas].reverse().find(r => r.grafico && r.grafico.z);
+  if(pz){ $('#z-media').value = fmtPaso(nor.media); $('#z-s').value = fmtPaso(nor.desv); $('#z-x').value = fmtPaso(pz.grafico.x); $('#z-z').value = ''; renderZCalc(); renderZTabla(); }
+  if(graf) ACCIONES.curva_normal({...graf.grafico, media:nor.media, desviacion:nor.desv});
+  else if(pz) irA('z');
+  const items = nor.respuestas.map(r => `<li class="${r.tipo==='?'?'no':''}"><span class="rq">${r.n}) ${esc(r.detalle)}</span><span class="rv">${esc(r.valorTxt)}</span>${r.valorTxt!=='—'?`<button class="copiar-r" data-v="${esc(r.valorTxt)}" title="Copiar">Copiar</button>`:''}</li>`).join('');
+  const html = `<ul class="entendido">${lis.join('')}</ul>` + (items ? `<div class="rt-tit">Respuestas</div><ol class="respuestas">${items}</ol>` : '');
+  const texto = `Media ${fmtPaso(nor.media)}, desviación estándar ${fmtPaso(nor.desv)}.\n` + nor.respuestas.map(r => `${r.n}) ${r.detalle}: ${r.valorTxt}`).join('\n') + (graf ? '\nEl gráfico quedó en la pestaña Curva normal.' : '');
+  return {html, texto, lleno: !!(graf || pz)};
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('.copiar-r'); if(!b) return;
+  try{ await navigator.clipboard.writeText(b.dataset.v); b.textContent = '✓'; setTimeout(() => b.textContent = 'Copiar', 1200); }catch(er){}
+});
+
+/* ---------- RESUMEN ---------- */
+function tarjeta(k, v, s=''){ return `<div class="dato"><div class="k">${k}</div><div class="v">${v}</div>${s?`<div class="s">${s}</div>`:''}</div>`; }
+function renderResumen(){
+  const d = est.datos, N = d.length, o = ordenar(d), dec = decimalesDe(d);
+  const m = calcularMedia(d), md = calcularMedianaManual(d), mo = calcularModaManual(d);
+  const vd = calcularVarianzaDesviacion(d, est.pob), cv = calcularCoeficienteVariacion(vd.desviacion, m);
+  const as = evaluarAsimetria(m, md), q = calcularCuartilesPractico(d), sm = suma(d);
+  const modaTxt = mo.tipo==='Amodal' ? '—' : (mo.modas.length>5 ? mo.modas.slice(0,5).map(v=>fmt(v,'moda')).join(' · ')+' …' : mo.modas.map(v=>fmt(v,'moda')).join(' y '));
+  const tipoPob = est.pob ? 'Población' : 'Muestra';
+  let h = `<h2>Resumen · ${esc(est.etiqueta)}</h2><div class="grid">`;
+  h += tarjeta('N', fmt(N,'n'));
+  h += tarjeta('Media', fmt(m,'media'));
+  h += tarjeta('Mediana', fmt(md,'mediana'), md!==redondearParidad(md,decimalesPara('mediana')) ? `sin redondear: ${fmtPaso(md)}` : '');
+  h += tarjeta('Moda', modaTxt, `${mo.tipo}${mo.tipo!=='Amodal'?` · se repite ${mo.frecuencia} veces`:''}`);
+  h += tarjeta('Mínimo', fmtDec(o[0],dec));
+  h += tarjeta('Máximo', fmtDec(o[N-1],dec));
+  h += tarjeta('Rango', fmtDec(limpio(o[N-1]-o[0]),dec), 'máximo menos mínimo');
+  h += tarjeta('Varianza', fmt(vd.varianza,'varianza'), tipoPob);
+  h += tarjeta('Desviación estándar', fmt(vd.desviacion,'desviacion'), tipoPob);
+  h += tarjeta('Coef. de variación', fmt(cv,'cv'));
+  h += tarjeta('Cuartil 1', fmt(q.Q1.val,'cuartil'));
+  h += tarjeta('Cuartil 2', fmt(q.Q2.val,'cuartil'));
+  h += tarjeta('Cuartil 3', fmt(q.Q3.val,'cuartil'));
+  h += tarjeta('Forma', as.replace('Asimetría ','Asim. '), as==='Simétrica' ? 'media igual a la mediana' : `media ${m>md?'mayor':'menor'} que la mediana`);
+  h += `</div><h3>Cómo se calculó</h3>`;
+  h += `<details><summary>Media</summary><div class="pasos"><p>Sumé los ${N} datos y la suma da ${fmtPaso(sm)}.</p><p>Después dividí esa suma entre la cantidad de datos: ${fmtPaso(sm)} ÷ ${N} = ${fmtPaso(m)}.</p><p>Redondeado a ${decimalesPara('media')} decimal(es) con la regla de paridad: <b>${fmt(m,'media')}</b>.</p></div></details>`;
+  let pm;
+  if(N%2){ const p=(N+1)/2; pm = `<p>Ordené los datos de menor a mayor. Como hay ${N} datos (cantidad impar), la mediana es el dato del centro: la posición (${N} + 1) ÷ 2 = ${p}.</p><p>El dato en esa posición es ${fmtPaso(o[p-1])}.</p>`; }
+  else { const p=N/2; pm = `<p>Ordené los datos de menor a mayor. Como hay ${N} datos (cantidad par), en el centro quedan dos datos: las posiciones ${p} y ${p+1}, que valen ${fmtPaso(o[p-1])} y ${fmtPaso(o[p])}.</p><p>La mediana es el promedio de esos dos: (${fmtPaso(o[p-1])} + ${fmtPaso(o[p])}) ÷ 2 = ${fmtPaso(md)}.</p>`; }
+  h += `<details><summary>Mediana</summary><div class="pasos">${pm}<p>Redondeada: <b>${fmt(md,'mediana')}</b>.</p></div></details>`;
+  h += `<details><summary>Moda</summary><div class="pasos">${mo.tipo==='Amodal' ? '<p>Ningún valor se repite más que los demás, así que la distribución es amodal (no tiene moda).</p>' : `<p>Conté cuántas veces aparece cada valor. La frecuencia más alta es ${mo.frecuencia}, y la tienen: ${mo.modas.map(v=>fmtPaso(v)).join(', ')}.</p><p>Como hay ${mo.modas.length} valor(es) con esa frecuencia, la distribución es <b>${mo.tipo.toLowerCase()}</b>.</p>`}</div></details>`;
+  h += `<details><summary>Varianza y desviación estándar</summary><div class="pasos"><p>A cada dato le resté la media (${fmtPaso(m)}), elevé al cuadrado cada diferencia y sumé todo. Esa suma de cuadrados da ${fmtPaso(vd.sc)}.</p><p>Como los datos son ${est.pob ? `una población, dividí entre N = ${N}` : `una muestra, dividí entre N − 1 = ${N} − 1 = ${vd.div}`}: ${fmtPaso(vd.sc)} ÷ ${vd.div} = ${fmtPaso(vd.varianza)}. Esa es la varianza: <b>${fmt(vd.varianza,'varianza')}</b>.</p><p>La desviación estándar es la raíz cuadrada de la varianza: la raíz de ${fmtPaso(vd.varianza)} = ${fmtPaso(vd.desviacion)}, o sea <b>${fmt(vd.desviacion,'desviacion')}</b>.</p></div></details>`;
+  h += `<details><summary>Coeficiente de variación</summary><div class="pasos"><p>Dividí la desviación estándar entre la media y lo multipliqué por 100: ${fmtPaso(vd.desviacion)} ÷ ${fmtPaso(m)} × 100 = ${fmtPaso(cv)}.</p><p>Resultado: <b>${fmt(cv,'cv')}</b>. Mientras más alto, más dispersos están los datos con respecto a su media.</p></div></details>`;
+  h += `<details><summary>Cuartiles</summary><div class="pasos"><p>Con los datos ordenados, cada cuartil está en una posición: el primero en (N + 1) × 1 ÷ 4, el segundo en (N + 1) × 2 ÷ 4 y el tercero en (N + 1) × 3 ÷ 4.</p>${[1,2,3].map(k=>{const Q=q['Q'+k], pos=Q.pos, i=Math.floor(pos), fr=pos-i; return `<p>Cuartil ${k}: posición (${N} + 1) × ${k} ÷ 4 = ${fmtPaso(pos)}. ${fr>1e-9 && pos>1 && pos<N ? `Cae entre el dato ${i} (${fmtPaso(o[i-1])}) y el dato ${i+1} (${fmtPaso(o[i])}), así que tomo el primero y le sumo ${fmtPaso(fr)} de la distancia al siguiente: ${fmtPaso(o[i-1])} + ${fmtPaso(fr)} × (${fmtPaso(o[i])} − ${fmtPaso(o[i-1])}) = ${fmtPaso(Q.val)}.` : `El dato en esa posición es ${fmtPaso(Q.val)}.`}</p>`;}).join('')}</div></details>`;
+  h += `<details><summary>Forma de la distribución</summary><div class="pasos"><p>Comparé la media (${fmtPaso(m)}) con la mediana (${fmtPaso(md)}).</p><p>${as==='Simétrica' ? 'Son iguales: la distribución es simétrica.' : m>md ? 'La media es mayor: los valores altos la jalan hacia la derecha, entonces la cola larga está hacia los valores altos. Eso es <b>asimetría positiva</b>.' : 'La media es menor: los valores bajos la jalan hacia la izquierda, entonces la cola larga está hacia los valores bajos. Eso es <b>asimetría negativa</b>.'}</p></div></details>`;
+  $('#p-resumen').innerHTML = h;
+}
+
+/* ---------- FRECUENCIAS ---------- */
+['#f-amp','#f-ini','#f-fin','#f-orden','#f-acum'].forEach(s => $(s).addEventListener('input', renderFrecuencias));
+['#f-p','#f-x'].forEach(s => $(s).addEventListener('input', renderPercentiles));
+function renderFrecuencias(){
+  if(!est.datos.length) return;
+  const amp = numOrNull($('#f-amp').value);
+  const t = generarTablaFrecuencias(est.datos, {amplitud: amp && amp>0 ? amp : null, inicio:numOrNull($('#f-ini').value), fin:numOrNull($('#f-fin').value), orden:$('#f-orden').value, acumulacion:$('#f-acum').value});
+  est.tabla = t;
+  if(!t.filas.length){ $('#f-tabla').innerHTML = '<div class="vacio">Con esos límites no queda ningún intervalo.</div>'; return; }
+  $('#f-info').textContent = `Amplitud usada: ${fmtDec(t.i,t.dec)} · Primer límite inferior: ${fmtDec(t.ini,t.dec)} · ${t.filas.length} intervalos · N en la tabla: ${t.N}` + (t.fuera ? ` · ${t.fuera} dato(s) quedaron fuera de los límites` : '');
+  let h = `<div class="tabla-wrap"><table><thead><tr><th>Intervalo</th><th>Límites reales</th><th>Punto medio</th><th>Frecuencia absoluta simple</th><th>Frecuencia absoluta acumulada</th><th>Frecuencia relativa simple</th><th>Frecuencia relativa acumulada</th></tr></thead><tbody>`;
+  for(const r of t.mostradas) h += `<tr><td>${fmtDec(r.li,t.dec)} – ${fmtDec(r.ls,t.dec)}</td><td>${fmt(r.lri,'limite')} – ${fmt(r.lrs,'limite')}</td><td>${fmt(r.pm,'limite')}</td><td>${fmt(r.f,'frecuencia')}</td><td>${fmt(r.F,'frecuencia')}</td><td>${fmt(r.fr,'relativa')}</td><td>${fmt(r.Fr,'relativa')}</td></tr>`;
+  h += `</tbody><tfoot><tr><td>Total</td><td></td><td></td><td>${fmt(t.N,'frecuencia')}</td><td></td><td>${fmt(100,'relativa')}</td><td></td></tr></tfoot></table></div>`;
+  $('#f-tabla').innerHTML = h;
+  renderPercentiles();
+}
+function renderPercentiles(){
+  const t = est.tabla; if(!t || !t.filas.length) return;
+  let h = '';
+  const p = numOrNull($('#f-p').value);
+  if(p!==null){
+    if(p<0 || p>100) h += `<p class="estado err">El percentil tiene que estar entre 0 y 100.</p>`;
+    else {
+      const r = calcularPercentilPagano(t, p), F = r.fila;
+      const intervalo = `${fmtDec(F.li,t.dec)} – ${fmtDec(F.ls,t.dec)}`;
+      h += `<dl class="res"><dt>Percentil ${fmtPaso(p)}</dt><dd>${fmt(r.valor,'percentil')}</dd></dl><details open><summary>Pasos</summary><div class="pasos">`;
+      if(t.acumulaDesdeBajo){
+        h += `<p>1. Busco cuántos casos tienen que quedar por debajo: ${fmtPaso(p)} ÷ 100 × ${r.N} = ${fmtPaso(r.objetivo)} casos.</p>`;
+        h += `<p>2. En la columna Frecuencia absoluta acumulada (que acumula desde los valores bajos) busco el primer intervalo que llega a ${fmtPaso(r.objetivo)}: es ${intervalo}. Su límite real inferior es ${fmtPaso(F.lri)}, tiene ${F.f} casos y por debajo de él hay ${r.debajo} casos.</p>`;
+        h += `<p>3. Me faltan ${fmtPaso(r.objetivo)} − ${r.debajo} = ${fmtPaso(r.objetivo-r.debajo)} casos dentro del intervalo. Cada caso «ocupa» ${fmtPaso(t.i)} ÷ ${F.f} = ${fmtPaso(t.i/F.f)} puntos.</p>`;
+        h += `<p>4. Percentil = límite real inferior + (amplitud ÷ f) × casos que faltan = ${fmtPaso(F.lri)} + ${fmtPaso(t.i/F.f)} × ${fmtPaso(r.objetivo-r.debajo)} = ${fmtPaso(r.valor)}, o sea <b>${fmt(r.valor,'percentil')}</b>.</p>`;
+      } else {
+        h += `<p>1. Esta tabla acumula desde los valores altos, así que cuento desde arriba. Casos que deben quedar por encima: (100 − ${fmtPaso(p)}) ÷ 100 × ${r.N} = ${fmtPaso(r.objetivoArriba)}.</p>`;
+        h += `<p>2. El intervalo donde cae ese punto es ${intervalo}. Su límite real superior es ${fmtPaso(F.lrs)}, tiene ${F.f} casos y por encima de él hay ${r.arriba} casos.</p>`;
+        h += `<p>3. Me faltan ${fmtPaso(r.objetivoArriba)} − ${r.arriba} = ${fmtPaso(r.objetivoArriba-r.arriba)} casos dentro del intervalo. Cada caso ocupa ${fmtPaso(t.i)} ÷ ${F.f} = ${fmtPaso(t.i/F.f)} puntos.</p>`;
+        h += `<p>4. Percentil = límite real superior − (amplitud ÷ f) × casos que faltan = ${fmtPaso(F.lrs)} − ${fmtPaso(t.i/F.f)} × ${fmtPaso(r.objetivoArriba-r.arriba)} = ${fmtPaso(r.valor)}, o sea <b>${fmt(r.valor,'percentil')}</b>. (Da lo mismo que contando desde abajo.)</p>`;
+      }
+      h += `</div></details>`;
+    }
+  }
+  const x = numOrNull($('#f-x').value);
+  if(x!==null){
+    const r = calcularRangoPercentil(t, x);
+    if(!r) h += `<p class="estado err">El puntaje ${fmtPaso(x)} queda fuera de la tabla.</p>`;
+    else {
+      const F = r.fila;
+      h += `<dl class="res"><dt>Rango percentil de ${fmtPaso(x)}</dt><dd>${fmt(r.pr,'percentil')}</dd></dl><details open><summary>Pasos</summary><div class="pasos">`;
+      h += `<p>1. El puntaje ${fmtPaso(x)} cae en el intervalo ${fmtDec(F.li,t.dec)} – ${fmtDec(F.ls,t.dec)}, que empieza en el límite real ${fmtPaso(F.lri)} y tiene ${F.f} casos. Por debajo de ese intervalo hay ${r.debajo} casos.</p>`;
+      h += `<p>2. Dentro del intervalo, la parte que queda por debajo de ${fmtPaso(x)} tiene (${F.f} ÷ ${fmtPaso(t.i)}) × (${fmtPaso(x)} − ${fmtPaso(F.lri)}) = ${fmtPaso(r.dentro)} casos.</p>`;
+      h += `<p>3. En total hay ${r.debajo} + ${fmtPaso(r.dentro)} = ${fmtPaso(r.debajo+r.dentro)} casos por debajo. Como porcentaje de ${r.N}: ${fmtPaso(r.debajo+r.dentro)} ÷ ${r.N} × 100 = <b>${fmt(r.pr,'percentil')}</b>.</p></div></details>`;
+    }
+  }
+  $('#f-pres').innerHTML = h;
+}
+async function copiar(texto, boton){
+  try{ await navigator.clipboard.writeText(texto); const t = boton.textContent; boton.textContent = 'Copiada ✓'; setTimeout(()=>boton.textContent=t, 1400); }
+  catch(e){ alert('No se pudo copiar automáticamente.'); }
+}
+$('#f-copiar').onclick = e => {
+  const t = est.tabla; if(!t) return;
+  const lin = [['Intervalo','Límite real inferior','Límite real superior','Punto medio','Frecuencia absoluta simple','Frecuencia absoluta acumulada','Frecuencia relativa simple','Frecuencia relativa acumulada'].join('\t')];
+  t.mostradas.forEach(r => lin.push([`${fmtDec(r.li,t.dec)} - ${fmtDec(r.ls,t.dec)}`, fmt(r.lri,'limite'), fmt(r.lrs,'limite'), fmt(r.pm,'limite'), fmt(r.f,'frecuencia'), fmt(r.F,'frecuencia'), fmt(r.fr,'relativa'), fmt(r.Fr,'relativa')].join('\t')));
+  lin.push(['Total','','','',fmt(t.N,'frecuencia'),'',fmt(100,'relativa'),''].join('\t'));
+  copiar(lin.join('\n'), e.target);
+};
+
+/* ---------- TALLO Y HOJAS ---------- */
+$('#t-tipo').onchange = renderTallo;
+function renderTallo(){
+  if(!est.datos.length) return;
+  const tipo = $('#t-tipo').value;
+  $('#t-num').disabled = tipo==='estandar';
+  if(tipo==='estandar') $('#t-num').value = '1';
+  const d = generarTalloHojas(est.datos, tipo);
+  if(d.error){ est.diagrama = null; $('#t-diag').innerHTML = `<div class="vacio">${d.error}</div>`; return; }
+  est.diagrama = d;
+  $('#t-diag').innerHTML = `<div class="tallo">${d.filas.map(f => `<div><span class="t">${f.decena}</span>${f.hojas.join(' ') || '&nbsp;'}<span class="r">${tipo==='dividido' ? `tallo ${f.tallo} · hojas ${f.rango} · ` : ''}${f.hojas.length} dato(s)</span></div>`).join('')}</div><p class="hint">Ejemplo: tallo 7 con hoja 3 = 73.</p>`;
+}
+$('#t-buscar').onclick = () => {
+  const out = $('#t-res');
+  if(!est.diagrama){ out.className='estado err'; out.textContent='No hay diagrama.'; return; }
+  const dec = numOrNull($('#t-dec').value);
+  if(dec===null){ out.className='estado err'; out.textContent='Escribí el tallo (la decena).'; return; }
+  const r = consultarHoja(est.diagrama, dec, Number($('#t-num').value), $('#t-pos').value);
+  if(r.error){ out.className='estado err'; out.textContent = r.error; return; }
+  out.className = 'estado ok';
+  out.innerHTML = `Hoja: <b>${fmt(r.hoja,'hoja')}</b> · el dato completo es ${r.valor}. Hojas de ese tallo, en orden: ${r.hojas.join(' ')}.`;
+};
+
+/* ---------- PUNTAJES Z ---------- */
+['#z-media','#z-s','#z-x','#z-z'].forEach(s => $(s).addEventListener('input', () => { renderZCalc(); if(s==='#z-media'||s==='#z-s') renderZTabla(); }));
+function renderZ(){ renderZCalc(); renderZTabla(); }
+function zParams(){ return {m:numOrNull($('#z-media').value), s:numOrNull($('#z-s').value)}; }
+function renderZCalc(){
+  const {m,s} = zParams(); let h = '';
+  if(m===null || !(s>0)){ $('#z-calc').innerHTML = '<p class="hint">Escribí la media y una desviación estándar mayor que cero.</p>'; return; }
+  const x = numOrNull($('#z-x').value), z = numOrNull($('#z-z').value);
+  if(x!==null){ const zz = calcularPuntajeZ(x,m,s); h += `<dl class="res"><dt>z de ${fmtPaso(x)}</dt><dd>${fmt(zz,'z')}</dd></dl><p class="pasos hint">Le resté la media al puntaje: ${fmtPaso(x)} − ${fmtPaso(m)} = ${fmtPaso(x-m)}. Después dividí entre la desviación estándar: ${fmtPaso(x-m)} ÷ ${fmtPaso(s)} = ${fmtPaso(zz)}. El dato está ${fmt(Math.abs(zz),'z')} desviaciones ${zz>=0?'por encima':'por debajo'} de la media.</p>`; }
+  if(z!==null){ const xx = obtenerDatoBrutoDesdeZ(z,m,s); h += `<dl class="res"><dt>X para z = ${fmtPaso(z)}</dt><dd>${fmt(xx,'dato')}</dd></dl><p class="pasos hint">Multipliqué z por la desviación estándar: ${fmtPaso(z)} × ${fmtPaso(s)} = ${fmtPaso(z*s)}. Luego se lo sumé a la media: ${fmtPaso(m)} + ${fmtPaso(z*s)} = ${fmtPaso(xx)}.</p>`; }
+  $('#z-calc').innerHTML = h;
+}
+function renderZTabla(){
+  if(!est.datos.length){ $('#z-tabla').innerHTML = '<div class="vacio">Cargá datos para ver la tabla completa.</div>'; return; }
+  const {m,s} = zParams();
+  if(m===null || !(s>0)){ $('#z-tabla').innerHTML = ''; return; }
+  const dec = decimalesDe(est.datos);
+  $('#z-tabla').innerHTML = `<div class="tabla-wrap"><table><thead><tr><th>#</th><th>X</th><th>z</th></tr></thead><tbody>${est.datos.map((x,i)=>`<tr><td>${i+1}</td><td>${fmtDec(x,dec)}</td><td>${fmt(calcularPuntajeZ(x,m,s),'z')}</td></tr>`).join('')}</tbody></table></div>`;
+}
+$('#z-copiar').onclick = e => {
+  const {m,s} = zParams(); if(!est.datos.length || m===null || !(s>0)) return;
+  const dec = decimalesDe(est.datos);
+  copiar(['#\tX\tz', ...est.datos.map((x,i)=>`${i+1}\t${fmtDec(x,dec)}\t${fmt(calcularPuntajeZ(x,m,s),'z')}`)].join('\n'), e.target);
+};
+
+/* ---------- CURVA NORMAL ---------- */
+const TIPO_CFG = {
+  A:{t1:'Puntaje X', dos:false, sombra:'debajo'},
+  B:{t1:'Primer puntaje X', dos:true, sombra:'entre'},
+  C:{t1:'Percentil (entre 0 y 100)', dos:false, sombra:'debajo'},
+  D:{t1:'Porcentaje central (ej. 95)', dos:false, sombra:'entre'}
+};
+$('#n-tipo').onchange = () => { const c = TIPO_CFG[$('#n-tipo').value]; $('#n-t1').textContent = c.t1; $('#n-l2').hidden = !c.dos; $('#n-sombra').value = c.sombra; calcNormal(); };
+['#n-media','#n-s','#n-v1','#n-v2','#n-titulo'].forEach(s => $(s).addEventListener('input', calcNormal));
+['#n-sombra','#n-tabla'].forEach(s => $(s).addEventListener('change', calcNormal));
+$('#n-usar').onclick = () => {
+  if(!est.datos.length){ alert('Primero cargá y analizá datos en el paso 1.'); return; }
+  const vd = calcularVarianzaDesviacion(est.datos, est.pob);
+  $('#n-media').value = fmtPaso(vd.media,6); $('#n-s').value = fmtPaso(vd.desviacion,6); calcNormal();
+};
+function calcNormal(){
+  const m = numOrNull($('#n-media').value), s = numOrNull($('#n-s').value);
+  const v1 = numOrNull($('#n-v1').value), v2 = numOrNull($('#n-v2').value);
+  const tipo = $('#n-tipo').value, tb = $('#n-tabla').checked, sombra = $('#n-sombra').value;
+  const titulo = $('#n-titulo').value || 'Distribución Normal';
+  if(m===null || !(s>0)){ $('#n-res').innerHTML = '<p class="hint">Escribí la media y una desviación estándar mayor que cero.</p>'; $('#n-graf').innerHTML = ''; return; }
+  const zTxt = (z, zu) => tb && Math.abs(z-zu)>1e-12 ? `${fmtPaso(z)} → en la tabla se usa ${fmt(zu,'z')}` : fmt(zu,'z');
+  let h = '', x1 = null, x2 = null;
+  const notaArea = '<p class="hint">Las áreas están en porcentaje, sin el símbolo. Para tenerlas como proporción, dividilas entre 100.</p>';
+  if(tipo==='A' && v1!==null){
+    const r = calcularAreaYPercentilNormal(v1,m,s,tb); x1 = v1;
+    h += `<dl class="res"><dt>Puntaje z</dt><dd>${fmt(r.zUsado,'z')}</dd><dt>Área por debajo de X</dt><dd>${fmt(r.debajo,'area')}</dd><dt>Área por encima de X</dt><dd>${fmt(r.encima,'area')}</dd><dt>Área entre la media y X</dt><dd>${fmt(r.entreMedia,'area')}</dd><dt>Rango percentil</dt><dd>${fmt(r.percentil,'percentil')}</dd></dl>${notaArea}`;
+    h += `<details><summary>Pasos</summary><div class="pasos"><p>1. Le resté la media al puntaje: ${fmtPaso(v1)} − ${fmtPaso(m)} = ${fmtPaso(v1-m)}.</p><p>2. Lo dividí entre la desviación estándar: ${fmtPaso(v1-m)} ÷ ${fmtPaso(s)} = ${zTxt(r.z, r.zUsado)}.</p><p>3. En la tabla de la curva normal, para z = ${fmt(r.zUsado,'z')}, el área entre la media y z es ${fmt(r.entreMedia,'area')}.</p><p>4. ${r.zUsado>=0 ? `Como z es positivo, el área por debajo es 50 + ${fmt(r.entreMedia,'area')} = ${fmt(r.debajo,'area')}` : `Como z es negativo, el área por debajo es 50 − ${fmt(r.entreMedia,'area')} = ${fmt(r.debajo,'area')}`}, y por encima queda 100 − ${fmt(r.debajo,'area')} = ${fmt(r.encima,'area')}.</p><p>5. El rango percentil es el área por debajo: <b>${fmt(r.percentil,'percentil')}</b>.</p></div></details>`;
+  } else if(tipo==='B' && v1!==null && v2!==null){
+    const r = calcularAreaEntreDosPuntos(v1,v2,m,s,tb); x1 = v1; x2 = v2;
+    const ext = sombra==='fuera' ? 100-r.area : null;
+    h += `<dl class="res"><dt>z del primer puntaje</dt><dd>${fmt(r.a.zUsado,'z')}</dd><dt>z del segundo puntaje</dt><dd>${fmt(r.b.zUsado,'z')}</dd><dt>Área entre los dos</dt><dd>${fmt(r.area,'area')}</dd>${ext!==null?`<dt>Área fuera de los dos</dt><dd>${fmt(ext,'area')}</dd>`:''}</dl>${notaArea}`;
+    h += `<details><summary>Pasos</summary><div class="pasos"><p>1. Primer puntaje: (${fmtPaso(v1)} − ${fmtPaso(m)}) ÷ ${fmtPaso(s)} = ${zTxt(r.a.z, r.a.zUsado)}. Por debajo de él queda ${fmt(r.a.debajo,'area')}.</p><p>2. Segundo puntaje: (${fmtPaso(v2)} − ${fmtPaso(m)}) ÷ ${fmtPaso(s)} = ${zTxt(r.b.z, r.b.zUsado)}. Por debajo de él queda ${fmt(r.b.debajo,'area')}.</p><p>3. El área entre los dos es la resta del mayor menos el menor: ${fmt(Math.max(r.a.debajo,r.b.debajo),'area')} − ${fmt(Math.min(r.a.debajo,r.b.debajo),'area')} = <b>${fmt(r.area,'area')}</b>.${ext!==null?` Lo que queda fuera es 100 − ${fmt(r.area,'area')} = <b>${fmt(ext,'area')}</b>.`:''}</p></div></details>`;
+  } else if(tipo==='C' && v1!==null){
+    const r = obtenerDatoBrutoDesdePercentil(v1,m,s,tb);
+    if(!r) h += '<p class="estado err">El percentil tiene que estar entre 0 y 100 (sin incluirlos).</p>';
+    else {
+      x1 = r.x;
+      h += `<dl class="res"><dt>Puntaje z</dt><dd>${fmt(r.z,'z')}</dd><dt>Puntaje X del percentil ${fmtPaso(v1)}</dt><dd>${fmt(r.x,'percentil')}</dd></dl>`;
+      h += `<details><summary>Pasos</summary><div class="pasos"><p>1. El percentil ${fmtPaso(v1)} deja un área de ${fmtPaso(v1)} por debajo.${tb?` En la tabla, el z cuya área por debajo se acerca más es z = ${fmt(r.z,'z')} (área ${fmt(r.areaTabla,'area')}).`:` El z que deja exactamente esa área es ${fmtPaso(r.z)}.`}</p><p>2. Convierto z a puntaje: media + z × desviación = ${fmtPaso(m)} + ${fmtPaso(r.z)} × ${fmtPaso(s)} = ${fmtPaso(r.x)}, o sea <b>${fmt(r.x,'percentil')}</b>.</p></div></details>`;
+    }
+  } else if(tipo==='D' && v1!==null){
+    const r = obtenerLimitesCentralesNormal(v1,m,s,tb);
+    if(!r) h += '<p class="estado err">El porcentaje central tiene que estar entre 0 y 100 (sin incluirlos).</p>';
+    else {
+      x1 = r.inferior; x2 = r.superior;
+      h += `<dl class="res"><dt>Puntaje z</dt><dd>± ${fmt(r.z,'z')}</dd><dt>Límite inferior</dt><dd>${fmt(r.inferior,'limite')}</dd><dt>Límite superior</dt><dd>${fmt(r.superior,'limite')}</dd></dl>`;
+      h += `<details><summary>Pasos</summary><div class="pasos"><p>1. Si en el centro queda ${fmtPaso(v1)}, lo que sobra es 100 − ${fmtPaso(v1)} = ${fmtPaso(100-v1)}, repartido en dos colas iguales: ${fmtPaso(r.cola)} en cada una.</p><p>2. El límite superior deja ${fmtPaso(100-r.cola)} por debajo. ${tb?'En la tabla eso corresponde':'Eso corresponde'} a z = ${fmt(r.z,'z')}. Por simetría, el límite inferior está en z = −${fmt(r.z,'z')}.</p><p>3. Límite inferior: ${fmtPaso(m)} − ${fmtPaso(r.z)} × ${fmtPaso(s)} = <b>${fmt(r.inferior,'limite')}</b>.</p><p>4. Límite superior: ${fmtPaso(m)} + ${fmtPaso(r.z)} × ${fmtPaso(s)} = <b>${fmt(r.superior,'limite')}</b>.</p></div></details>`;
+    }
+  } else h += '<p class="hint">Completá los datos de la pregunta para ver el resultado.</p>';
+  $('#n-res').innerHTML = h;
+  $('#n-graf').innerHTML = graficarCurvaNormal(m, s, x1, x2, sombra, titulo);
+}
+
+function graficarCurvaNormal(m, s, x1=null, x2=null, tipoSombreado='debajo', titulo='Distribución Normal'){
+  const W=760, H=350, ml=34, mr=34, mt=58, mb=74;
+  const xmin = m-4*s, xmax = m+4*s, ymax = 0.3989/s*1.12;
+  const pdf = x => Math.exp(-0.5*((x-m)/s)**2)/(s*Math.sqrt(2*Math.PI));
+  const X = x => ml + (x-xmin)/(xmax-xmin)*(W-ml-mr);
+  const Y = y => H-mb - (y/ymax)*(H-mb-mt);
+  const base = Y(0);
+  let curva = '';
+  for(let k=0; k<=400; k++){ const x = xmin+k*(xmax-xmin)/400; curva += (k?'L':'M') + X(x).toFixed(1)+','+Y(pdf(x)).toFixed(1); }
+  const area = (a,b) => {
+    a = Math.max(a,xmin); b = Math.min(b,xmax); if(b<=a) return '';
+    let d = `M${X(a).toFixed(1)},${base}`;
+    for(let k=0; k<=160; k++){ const x = a+k*(b-a)/160; d += `L${X(x).toFixed(1)},${Y(pdf(x)).toFixed(1)}`; }
+    return `<path class="sombra" d="${d}L${X(b).toFixed(1)},${base}Z"/>`;
+  };
+  let sombras = '';
+  const ok1 = x1!==null && isFinite(x1), ok2 = x2!==null && isFinite(x2);
+  if(ok1){
+    if(tipoSombreado==='debajo') sombras = area(xmin, ok2 ? Math.max(x1,x2) : x1);
+    else if(tipoSombreado==='encima') sombras = area(ok2 ? Math.min(x1,x2) : x1, xmax);
+    else if(ok2){ const a = Math.min(x1,x2), b = Math.max(x1,x2); sombras = tipoSombreado==='entre' ? area(a,b) : area(xmin,a)+area(b,xmax); }
+    else sombras = area(xmin, x1);
+  }
+  let ejes = `<line class="eje" x1="${ml}" y1="${base}" x2="${W-mr}" y2="${base}"/>`;
+  ejes += `<text class="txt2" x="${ml-6}" y="${base+20}" text-anchor="end">X</text><text class="txt2" x="${ml-6}" y="${base+38}" text-anchor="end">z</text>`;
+  for(let k=-3; k<=3; k++){
+    const xv = m+k*s, px = X(xv).toFixed(1);
+    ejes += `<line class="eje" x1="${px}" y1="${base}" x2="${px}" y2="${base+6}"/>`;
+    ejes += `<text class="txt" x="${px}" y="${base+20}" text-anchor="middle">${fmt(xv,'dato')}</text>`;
+    ejes += `<text class="txt2" x="${px}" y="${base+38}" text-anchor="middle">${k}</text>`;
+  }
+  ejes += `<line class="media" x1="${X(m)}" y1="${base}" x2="${X(m)}" y2="${Y(pdf(m))}"/>`;
+  /* ----- Marcas de X1 y X2 con etiquetas que no se encimen ----- */
+  const anchoTxt = t => t.length * 7.2;            /* ancho aproximado de una etiqueta de 12 px */
+  const izq = ml, der = W - mr, fila0 = mt + 6, altoFila = 18;
+  const pts = [];
+  if(ok1) pts.push(x1);
+  if(ok2) pts.push(x2);
+  pts.sort((a,b) => a-b);
+  const etiquetas = pts.map((xv, i) => {
+    const xc = Math.min(Math.max(xv,xmin),xmax);
+    return {xv, px:X(xc), texto:`X = ${fmt(xv,'dato')} · z = ${fmt((xv-m)/s,'z')}`, lado: pts.length===2 ? (i===0 ? 'izq' : 'der') : (xc > m ? 'izq' : 'der')};
+  });
+  /* Ubicar cada etiqueta a un lado de su línea; si no cabe en el gráfico, pasarla al otro lado */
+  const cajas = [];
+  for(const e of etiquetas){
+    const w = anchoTxt(e.texto);
+    let x0 = e.lado==='izq' ? e.px - 6 - w : e.px + 6;
+    if(x0 < izq) x0 = e.px + 6;
+    if(x0 + w > der) x0 = e.px - 6 - w;
+    x0 = Math.max(izq, Math.min(x0, der - w));
+    let fila = 0;
+    while(cajas.some(c => c.fila===fila && !(x0 + w < c.x0 - 8 || x0 > c.x0 + c.w + 8))) fila++;
+    cajas.push({x0, w, fila});
+    e.x0 = x0; e.fila = fila;
+  }
+  let marcas = '';
+  for(const e of etiquetas){
+    const y = fila0 + e.fila*altoFila;
+    marcas += `<line class="marca" x1="${e.px.toFixed(1)}" y1="${base}" x2="${e.px.toFixed(1)}" y2="${(y - 12).toFixed(1)}"/>`;
+    marcas += `<text class="marcaTxt halo" x="${e.x0.toFixed(1)}" y="${y.toFixed(1)}">${e.texto}</text>`;
+  }
+  /* ----- Puntos de inflexión: la etiqueta va del lado que tenga menos marcas cerca ----- */
+  let infl = '';
+  [-1,1].forEach(k => { const xv = m+k*s; infl += `<circle class="infl" cx="${X(xv).toFixed(1)}" cy="${Y(pdf(xv)).toFixed(1)}" r="4"/>`; });
+  return `<svg class="normal" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(titulo)}">
+<text class="tit" x="${W/2}" y="24" text-anchor="middle">${esc(titulo)}</text>
+${sombras}<path class="curva" d="${curva}"/>${ejes}${infl}${marcas}
+<text class="txt2" x="${W/2}" y="${H-10}" text-anchor="middle">Media = ${fmt(m,'media')} · Desviación estándar = ${fmt(s,'desviacion')} · <tspan class="infl-ley">●</tspan> puntos de inflexión (z = −1 y z = 1)</text>
+</svg>`;
+}
+$('#n-desc').onclick = () => {
+  const svg = $('#n-graf svg'); if(!svg) return;
+  const estilo = `<style>.curva{fill:none;stroke:#1c2230;stroke-width:2}.eje{stroke:#5d6574;stroke-width:1}.sombra{fill:rgba(44,90,135,.28)}.txt{fill:#1c2230;font-size:12px;font-family:Arial,sans-serif}.txt2{fill:#5d6574;font-size:11px;font-family:Arial,sans-serif}.tit{fill:#1c2230;font-size:15px;font-weight:600;font-family:Arial,sans-serif}.marca{stroke:#2c5a87;stroke-width:1.6;stroke-dasharray:5 4}.marcaTxt{fill:#2c5a87;font-size:12px;font-weight:600;font-family:Arial,sans-serif}.infl,.infl-ley{fill:#2c5a87}.media{stroke:#5d6574;stroke-dasharray:2 3}.halo{paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}</style><rect width="100%" height="100%" fill="#ffffff"/>`;
+  const txt = svg.outerHTML.replace(/(<svg[^>]*>)/, '$1'+estilo);
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([txt], {type:'image/svg+xml'}));
+  a.download = 'curva_normal.svg'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+/* ---------- ESCALAS ---------- */
+['#e-x','#e-max'].forEach(s => $(s).addEventListener('input', () => {
+  const x = numOrNull($('#e-x').value), mx = numOrNull($('#e-max').value), out = $('#e-res');
+  if(x===null || mx===null){ out.textContent = ''; return; }
+  if(x<1 || x>mx){ out.className='estado err'; out.textContent = `El valor tiene que estar entre 1 y ${fmtPaso(mx)}.`; return; }
+  out.className = 'estado ok';
+  out.innerHTML = `Valor recodificado: <b>${fmtPaso(recodificarReverso(x,mx))}</b>. Se calcula así: (máximo + 1) − valor = (${fmtPaso(mx)} + 1) − ${fmtPaso(x)} = ${fmtPaso(recodificarReverso(x,mx))}.`;
+}));
+function renderComposite(){
+  if(!est.csv){ return; }
+  const cols = columnasNumericas(est.csv).filter(c=>c.num);
+  let h = `<p class="hint">Marcá los ítems que se suman y, de esos, cuáles son inversos. Las filas con algún ítem vacío o con código de valor perdido quedan vacías.</p><div class="items">`;
+  h += cols.map(c => `<div class="it"><input type="checkbox" class="e-inc" value="${c.j}" aria-label="Incluir ${esc(c.h)}"><span>${esc(c.h)}</span><label class="check" style="font-size:12px"><input type="checkbox" class="e-inv" value="${c.j}"> <small>inverso</small></label></div>`).join('');
+  h += `</div><div class="fila"><label>Valor máximo de la escala <input id="e-cmax" value="7"></label><label>Nombre de la nueva variable <input id="e-nom" value="Escala_Total"></label><button id="e-crear" class="prim">Crear variable</button><button id="e-bajar">Descargar CSV con la variable</button></div><p id="e-cres" class="estado"></p>`;
+  $('#e-comp').innerHTML = h;
+  $('#e-crear').onclick = () => {
+    const items = $$('.e-inc:checked').map(i=>+i.value), inv = $$('.e-inv:checked').map(i=>+i.value).filter(j=>items.includes(j));
+    const mx = numOrNull($('#e-cmax').value), nom = $('#e-nom').value.trim(), out = $('#e-cres');
+    if(items.length<2){ out.className='estado err'; out.textContent='Marcá al menos dos ítems.'; return; }
+    if(mx===null){ out.className='estado err'; out.textContent='Escribí el valor máximo de la escala.'; return; }
+    if(!nom){ out.className='estado err'; out.textContent='Ponele un nombre a la variable.'; return; }
+    const vals = calcularVariableCompuesta(est.csv, items, inv, mx, nom, codigosPerdidos());
+    const vacias = vals.filter(v=>v===null).length;
+    const col = est.csv.enc.indexOf(nom);
+    llenarSelectoresCSV(String(col));
+    out.className = 'estado ok';
+    out.textContent = `Listo: «${nom}» suma ${items.length} ítems${inv.length?` (${inv.length} recodificados como inversos)`:''}. ${vals.length-vacias} filas con valor${vacias?`, ${vacias} vacías por datos perdidos`:''}. Ya quedó elegida como variable en el paso 1: tocá «Analizar».`;
+  };
+  $('#e-bajar').onclick = () => {
+    const d = est.csv.del, q = v => (String(v).includes(d)||String(v).includes('"')) ? `"${String(v).replace(/"/g,'""')}"` : v;
+    const txt = [est.csv.enc.map(q).join(d), ...est.csv.filas.map(f => est.csv.enc.map((_,j)=>q(f[j]??'')).join(d))].join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['﻿'+txt], {type:'text/csv'}));
+    a.download = 'datos_con_variable.csv'; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+}
+
+/* ---------- MEDIA PONDERADA ---------- */
+['#w-val','#w-pes'].forEach(s => $(s).addEventListener('input', () => {
+  const v = parseLista($('#w-val').value).filter(x=>x!==null&&!Number.isNaN(x));
+  const p = parseLista($('#w-pes').value).filter(x=>x!==null&&!Number.isNaN(x));
+  const out = $('#w-res');
+  if(!v.length || !p.length){ out.innerHTML = ''; return; }
+  if(v.length !== p.length){ out.innerHTML = `<p class="estado err">Hay ${v.length} valores y ${p.length} pesos: tienen que ser la misma cantidad.</p>`; return; }
+  const r = calcularMediaPonderada(v,p);
+  if(r.sumaPesos===0){ out.innerHTML = '<p class="estado err">Los pesos suman cero.</p>'; return; }
+  out.innerHTML = `<dl class="res"><dt>Media ponderada</dt><dd>${fmt(r.valor,'media')}</dd></dl><details open><summary>Pasos</summary><div class="pasos"><p>1. Multipliqué cada valor por su peso: ${v.map((x,i)=>`${fmtPaso(x)} × ${fmtPaso(p[i])} = ${fmtPaso(x*p[i])}`).join(' · ')}.</p><p>2. Sumé esos productos: ${fmtPaso(r.sumaProductos)}. Sumé los pesos: ${fmtPaso(r.sumaPesos)}.</p><p>3. Dividí una suma entre la otra: ${fmtPaso(r.sumaProductos)} ÷ ${fmtPaso(r.sumaPesos)} = ${fmtPaso(r.valor)}, o sea <b>${fmt(r.valor,'media')}</b>.</p></div></details>`;
+}));
+
+/* ---------- AJUSTES ---------- */
+function mostrarAjustes(){ $('#a-sep').value = ajustes.separador; $('#a-media').value = ajustes.media; $('#a-centro').value = ajustes.centro; $('#a-dos').value = ajustes.dos; $('#a-relativa').value = ajustes.relativa; }
+['media','centro','dos','relativa'].forEach(k => $('#a-'+k).addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  if(Number.isInteger(v) && v>=0 && v<=6){ ajustes[k] = v; try{ localStorage.setItem('ed_ajustes', JSON.stringify(ajustes)); }catch(er){} renderTodo(); calcNormal(); }
+}));
+$('#a-sep').addEventListener('change', e => { ajustes.separador = e.target.value; try{ localStorage.setItem('ed_ajustes', JSON.stringify(ajustes)); }catch(er){} renderTodo(); calcNormal(); });
+$('#a-reset').onclick = () => { ajustes = {...AJUSTES_DEF}; try{ localStorage.removeItem('ed_ajustes'); }catch(e){} mostrarAjustes(); renderTodo(); calcNormal(); };
+['#r-v','#r-d'].forEach(s => $(s).addEventListener('input', () => {
+  const v = numOrNull($('#r-v').value), d = parseInt($('#r-d').value,10), out = $('#r-res');
+  if(v===null || !(d>=0)){ out.textContent = ''; return; }
+  const r = redondearParidadDetalle(v, d);
+  out.className = 'estado ok';
+  out.innerHTML = `Resultado: <b>${r.valor.toFixed(d).replace('.',SEP())}</b>. ${r.motivo}`;
+}));
+
+/* ---------- ASISTENTE (OLLAMA) ---------- */
+const chat = {historial:[], control:null};
+let modeloGuardado = 'qwen2.5:7b';
+try{ const g = JSON.parse(localStorage.getItem('ed_ollama')); if(g){ $('#o-url').value = g.url || $('#o-url').value; if(g.modelo){ modeloGuardado = g.modelo; $('#o-modelo').innerHTML = `<option value="${esc(g.modelo)}">${esc(g.modelo)}</option>`; } } }catch(e){}
+function guardarOllama(){ modeloGuardado = $('#o-modelo').value; try{ localStorage.setItem('ed_ollama', JSON.stringify({url:$('#o-url').value, modelo:modeloGuardado})); }catch(e){} }
+$('#o-url').addEventListener('change', () => { guardarOllama(); detectarOllama(); });
+const ollamaURL = () => $('#o-url').value.trim().replace(/\/+$/,'');
+function conectarAsistente(precalentar){
+  clearInterval(refrescoPs);
+  if(esClaude()) return detectarClaude();
+  detectarOllama(precalentar);
+  if(document.body.classList.contains('chat-abierto')) refrescoPs = setInterval(refrescarEnMemoria, 20000);
+}
+const abrirChat = () => { document.body.classList.add('chat-abierto'); setTimeout(()=>$('#o-msg').focus(), 150); conectarAsistente(true); };
+['#o-abrir','#o-abrir-top','#o-abrir-tab'].forEach(s => $(s).onclick = abrirChat);
+$('#o-cerrar').onclick = () => { document.body.classList.remove('chat-abierto'); clearInterval(refrescoPs); };
+document.addEventListener('keydown', e => { if(e.key==='Escape') document.body.classList.remove('chat-abierto'); });
+
+/* Texto plano de un bloque de resultados, incluso si está oculto o dentro de un «Pasos» cerrado */
+function textoPlano(el){
+  if(!el) return '';
+  const c = el.cloneNode(true);
+  c.querySelectorAll('dt').forEach(n => n.append(': '));
+  c.querySelectorAll('p,dd,li,summary,tr,div,h2,h3').forEach(n => n.append('\n'));
+  c.querySelectorAll('td,th').forEach(n => n.append(' | '));
+  return c.textContent.replace(/[ \t]+\n/g,'\n').replace(/\n{2,}/g,'\n').trim();
+}
+function textoResumen(){
+  if(!est.datos.length) return 'Todavía no hay datos cargados.';
+  const d = est.datos, m = calcularMedia(d), md = calcularMedianaManual(d), mo = calcularModaManual(d);
+  const vd = calcularVarianzaDesviacion(d, est.pob), q = calcularCuartilesPractico(d), o = ordenar(d);
+  return `Variable: ${est.etiqueta}. Tipo: ${est.pob?'población':'muestra'}.
+N = ${d.length}; media = ${fmt(m,'media')}; mediana = ${fmt(md,'mediana')}; moda = ${mo.tipo==='Amodal'?'no hay (amodal)':mo.modas.map(v=>fmt(v,'moda')).join(' y ')+' ('+mo.tipo.toLowerCase()+')'}.
+Mínimo = ${fmtPaso(o[0])}; máximo = ${fmtPaso(o[o.length-1])}; varianza = ${fmt(vd.varianza,'varianza')}; desviación estándar = ${fmt(vd.desviacion,'desviacion')}; coeficiente de variación = ${fmt(calcularCoeficienteVariacion(vd.desviacion,m),'cv')}.
+Cuartiles: primero ${fmt(q.Q1.val,'cuartil')}, segundo ${fmt(q.Q2.val,'cuartil')}, tercero ${fmt(q.Q3.val,'cuartil')}. Forma: ${evaluarAsimetria(m,md)}.`;
+}
+function textoTabla(){
+  const t = est.tabla; if(!t || !t.filas.length) return '';
+  return `Amplitud ${fmtDec(t.i,t.dec)}, primer límite inferior ${fmtDec(t.ini,t.dec)}.\nIntervalo | frecuencia absoluta simple | frecuencia absoluta acumulada | frecuencia relativa simple | frecuencia relativa acumulada\n` +
+    t.mostradas.map(r => `${fmtDec(r.li,t.dec)} a ${fmtDec(r.ls,t.dec)} | ${r.f} | ${r.F} | ${fmt(r.fr,'relativa')} | ${fmt(r.Fr,'relativa')}`).join('\n');
+}
+
+const INSTRUCCIONES = `Sos un tutor de estadística descriptiva para un estudiante de primer año de Psicología. El curso usa el libro de Robert Pagano.
+Estás dentro de una página web que hace todos los cálculos. Reglas:
+- Respondé en español, con un tono cercano y claro.
+- Explicá con palabras y ejemplos numéricos, no con símbolos matemáticos ni fórmulas con letras.
+- Usá coma como separador decimal (ejemplo: 14,35) y no pongas el símbolo de porcentaje en frecuencias relativas ni en áreas de la curva normal.
+- NUNCA hagas las cuentas vos. Usá solo los números que te da la página o que te devuelven las herramientas. Si te falta un dato, pedíselo al estudiante.
+- El redondeo del curso es por paridad: si la cifra que se elimina es exactamente 5, se redondea al número par.
+- Sé breve: andá al punto y ofrecé profundizar si hace falta.`;
+
+
+function contextoActual(){
+  if(!$('#o-contexto').checked) return '';
+  const partes = [];
+  if(est.datos.length) partes.push(textoResumen());
+  const tt = textoTabla(); if(tt) partes.push('Tabla de frecuencias:\n' + tt);
+  const pr = textoPlano($('#f-pres')); if(pr) partes.push('Percentiles calculados:\n' + pr.slice(0,1500));
+  const n = textoPlano($('#n-res')), nm = $('#n-media').value, ns = $('#n-s').value;
+  if(n && nm && ns) partes.push(`Curva normal (media ${nm}, desviación estándar ${ns}, pregunta tipo ${$('#n-tipo').value}):\n` + n.slice(0,1500));
+  return partes.length ? '\n\nResultados que el estudiante tiene en pantalla ahora:\n' + partes.join('\n\n') : '';
+}
+
+const vacio = v => v===undefined || v===null || v==='';
+const aTexto = v => Array.isArray(v) ? v.map(aTexto).join(' ') : (typeof v==='number' ? String(v).replace('.', SEP()) : String(v));
+function poner(sel, v){
+  if(vacio(v)) return;
+  const el = $(sel); el.value = aTexto(v);
+  el.classList.add('llenado'); setTimeout(() => el.classList.remove('llenado'), 2500);
+}
+function irA(tab){ const b = $(`#tabs button[data-tab="${tab}"]`); if(b){ b.click(); $('#tabs').scrollIntoView({behavior:'smooth', block:'start'}); } }
+function sinDatos(){ return 'Todavía no hay datos cargados en la página. Pedile al estudiante los datos o que cargue el archivo CSV.'; }
+function despuesDeAnalizar(){
+  const st = $('#estado-datos');
+  if(st.classList.contains('err')) return 'No se pudieron analizar los datos: ' + st.textContent;
+  return 'Datos analizados. Quedó en la pestaña Resumen.\n' + textoResumen();
+}
+const ACCIONES = {
+  cargar_datos(a){
+    $('[data-fuente="pegar"]').click();
+    poner('#txt-datos', a.datos);
+    if(a.tipo) $('#sel-pob').value = a.tipo==='poblacion' ? 'poblacion' : 'muestra';
+    analizar(); irA('resumen');
+    return despuesDeAnalizar();
+  },
+  elegir_variable_csv(a){
+    if(!est.csv) return 'No hay ningún archivo CSV cargado. Pedile al estudiante que lo cargue en el paso 1.';
+    const busca = s => est.csv.enc.findIndex(h => h.toLowerCase()===String(s).toLowerCase());
+    const j = busca(a.variable);
+    if(j<0 || !$(`#sel-col option[value="${j}"]`)) return `No encontré la columna numérica «${a.variable}». Columnas numéricas disponibles: ${[...$('#sel-col').options].map(o=>o.text).join(', ')}.`;
+    $('[data-fuente="csv"]').click();
+    $('#sel-col').value = String(j); $('#sel-col').classList.add('llenado'); setTimeout(()=>$('#sel-col').classList.remove('llenado'),2500);
+    if(!vacio(a.filtro_columna)){
+      const fj = busca(a.filtro_columna);
+      if(fj<0) return `No encontré la columna «${a.filtro_columna}» para filtrar.`;
+      $('#sel-filtro-col').value = String(fj); llenarValoresFiltro();
+      const op = [...$('#sel-filtro-val').options].find(o => o.value.toLowerCase()===String(a.filtro_valor??'').toLowerCase());
+      if(!op) return `La columna «${a.filtro_columna}» no tiene el valor «${a.filtro_valor}». Valores posibles: ${[...$('#sel-filtro-val').options].map(o=>o.value).join(', ')}.`;
+      $('#sel-filtro-val').value = op.value;
+    } else { $('#sel-filtro-col').value = ''; llenarValoresFiltro(); }
+    if(a.tipo) $('#sel-pob').value = a.tipo==='poblacion' ? 'poblacion' : 'muestra';
+    analizar(); irA('resumen');
+    return despuesDeAnalizar();
+  },
+  tabla_frecuencias(a){
+    if(!est.datos.length) return sinDatos();
+    ['amplitud','inicio','fin'].forEach((k,i) => { const sel = ['#f-amp','#f-ini','#f-fin'][i]; if(!vacio(a[k])) poner(sel, a[k]); });
+    if(a.orden) $('#f-orden').value = a.orden;
+    if(a.acumulacion) $('#f-acum').value = a.acumulacion;
+    if(!vacio(a.percentil)) poner('#f-p', a.percentil);
+    if(!vacio(a.puntaje_rango_percentil)) poner('#f-x', a.puntaje_rango_percentil);
+    renderFrecuencias(); irA('frecuencias');
+    const pr = textoPlano($('#f-pres'));
+    return 'Tabla armada en la pestaña Tabla de frecuencias.\n' + textoTabla() + (pr ? '\n\nPercentiles:\n' + pr : '');
+  },
+  curva_normal(a){
+    $('#n-tipo').value = ['A','B','C','D'].includes(a.tipo) ? a.tipo : 'A';
+    $('#n-tipo').onchange();
+    poner('#n-media', a.media); poner('#n-s', a.desviacion); poner('#n-v1', a.valor1);
+    if(!vacio(a.valor2)) poner('#n-v2', a.valor2);
+    if(a.sombreado) $('#n-sombra').value = a.sombreado;
+    calcNormal(); irA('normal');
+    return 'Resultado en la pestaña Curva normal (el gráfico quedó dibujado):\n' + textoPlano($('#n-res'));
+  },
+  puntaje_z(a){
+    poner('#z-media', a.media); poner('#z-s', a.desviacion);
+    $('#z-x').value = ''; $('#z-z').value = '';
+    poner('#z-x', a.x); poner('#z-z', a.z);
+    renderZCalc(); renderZTabla(); irA('z');
+    return 'Resultado en la pestaña Puntajes z:\n' + textoPlano($('#z-calc'));
+  },
+  media_ponderada(a){
+    poner('#w-val', a.valores); poner('#w-pes', a.pesos);
+    $('#w-val').dispatchEvent(new Event('input')); irA('ponderada');
+    return 'Resultado en la pestaña Media ponderada:\n' + textoPlano($('#w-res'));
+  },
+  tallo_hojas(a){
+    if(!est.datos.length) return sinDatos();
+    if(a.tipo) $('#t-tipo').value = a.tipo;
+    renderTallo(); irA('tallo');
+    let r = 'Diagrama en la pestaña Tallo y hojas:\n' + textoPlano($('#t-diag'));
+    if(!vacio(a.tallo)){
+      poner('#t-dec', a.tallo);
+      $('#t-num').value = String(a.num_tallo===2 ? 2 : 1);
+      $('#t-pos').value = a.posicion || 'primera';
+      $('#t-buscar').click();
+      r += '\nBúsqueda: ' + $('#t-res').textContent;
+    }
+    return r;
+  },
+  recodificar_item(a){
+    poner('#e-x', a.valor); poner('#e-max', a.maximo);
+    $('#e-x').dispatchEvent(new Event('input')); irA('escalas');
+    return $('#e-res').textContent || 'No se pudo recodificar.';
+  },
+  elegir_opcion(a){
+    const ctl = controlesPagina().find(c => c.id === a.control);
+    if(!ctl) return `No existe el control «${a.control}» en la página.`;
+    const quiere = normalizar(a.opcion);
+    let elegida;
+    if(ctl.tipo === 'casilla') elegida = /^(si|true|1|on|marcar|marcada|activar|activada)$/.test(quiere) ? ctl.opciones[0] : ctl.opciones[1];
+    else elegida = ctl.opciones.find(o => normalizar(o.valor)===quiere) || ctl.opciones.find(o => normalizar(o.texto)===quiere)
+                || ctl.opciones.find(o => quiere && normalizar(o.texto).includes(quiere));
+    if(!elegida) return `«${ctl.nombre}» no tiene la opción «${a.opcion}». Opciones posibles: ${ctl.opciones.map(o => o.texto).join(', ')}.`;
+    if(ctl.id === 'fuente_datos'){ $(`[data-fuente="${elegida.valor}"]`).click(); $('#sec-datos').scrollIntoView({behavior:'smooth', block:'start'}); return `Listo: en el paso 1 quedó elegido «${elegida.texto}».`; }
+    if(ctl.tipo === 'casilla') ctl.el.checked = elegida.valor === 'si'; else ctl.el.value = elegida.valor;
+    ctl.el.dispatchEvent(new Event('input', {bubbles:true})); ctl.el.dispatchEvent(new Event('change', {bubbles:true}));
+    ctl.el.classList.add('llenado'); setTimeout(() => ctl.el.classList.remove('llenado'), 2500);
+    chat.ultimaPestana = ctl.tab;
+    if(ctl.tab) irA(ctl.tab); else ctl.el.scrollIntoView({behavior:'smooth', block:'center'});
+    return `Listo: «${ctl.nombre}» quedó en «${elegida.texto}».` + resultadoDePestana(ctl.tab);
+  },
+  ir_a_pestana(a){
+    const b = $(`#tabs button[data-tab="${a.pestana}"]`);
+    if(!b) return `No existe la pestaña «${a.pestana}».`;
+    chat.ultimaPestana = a.pestana; irA(a.pestana);
+    return `Abrí la pestaña ${b.textContent.trim()}.` + resultadoDePestana(a.pestana);
+  }
+};
+/* ----- Catálogo de las opciones de la página (listas desplegables y casillas) para que el asistente las elija ----- */
+const normalizar = s => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().trim();
+const nombrePestana = t => { const b = t && $(`#tabs button[data-tab="${t}"]`); return b ? b.textContent.trim() : 'paso 1 · Datos'; };
+function controlesPagina(){
+  const lista = [{id:'fuente_datos', nombre:'Forma de cargar los datos', tab:null, tipo:'lista',
+    opciones:$$('[data-fuente]').map(b => ({valor:b.dataset.fuente, texto:b.textContent.trim()}))}];
+  $$('main select, main input[type=checkbox]').forEach(el => {
+    if(!el.id) return;
+    const sec = el.closest('section'), tab = sec && sec.id.startsWith('p-') ? sec.id.slice(2) : null;
+    const lab = el.closest('label'); let nombre = el.id;
+    if(lab){ const c = lab.cloneNode(true); c.querySelectorAll('select,input,.hint,option').forEach(x => x.remove()); nombre = c.textContent.replace(/\s+/g,' ').trim() || el.id; }
+    const opciones = el.tagName==='SELECT' ? [...el.options].map(o => ({valor:o.value, texto:o.text.trim()})) : [{valor:'si', texto:'marcada'}, {valor:'no', texto:'desmarcada'}];
+    if(!opciones.length) return;
+    lista.push({id:el.id, el, nombre, tab, opciones, tipo: el.tagName==='SELECT' ? 'lista' : 'casilla'});
+  });
+  return lista;
+}
+function catalogoOpciones(){
+  return controlesPagina().map(c => {
+    const ops = c.opciones.slice(0,30).map(o => o.valor===o.texto ? o.valor : `${o.valor} = ${o.texto}`).join('; ');
+    const actual = c.id==='fuente_datos' ? ($('[data-fuente].on')||{}).dataset?.fuente : (c.tipo==='casilla' ? (c.el.checked ? 'si' : 'no') : c.el.value);
+    return `  · ${c.id} (${nombrePestana(c.tab)}) «${c.nombre}» — ahora: ${actual ?? ''} — opciones: ${ops}${c.opciones.length>30 ? '…' : ''}`;
+  }).join('\n');
+}
+const RESULTADO_DE = {resumen:'#p-resumen .grid', frecuencias:'#f-tabla', tallo:'#t-diag', z:'#z-calc', normal:'#n-res', ponderada:'#w-res', escalas:'#e-res'};
+const ZONA_DE_PESTANA = {resumen:'cargar_datos', frecuencias:'tabla_frecuencias', tallo:'tallo_hojas', z:'puntaje_z', normal:'curva_normal', ponderada:'media_ponderada', escalas:'recodificar_item'};
+function resultadoDePestana(tab){
+  const sel = RESULTADO_DE[tab]; if(!sel) return '';
+  const t = tab==='frecuencias' ? textoTabla() : textoPlano($(sel));
+  return t ? `\nResultado actual en la pestaña ${nombrePestana(tab)}:\n${t.slice(0,1500)}` : '';
+}
+const NOMBRE_ACCION = {cargar_datos:'Cargué los datos', elegir_variable_csv:'Elegí la variable del CSV', tabla_frecuencias:'Armé la tabla de frecuencias', curva_normal:'Llené la curva normal', puntaje_z:'Llené los puntajes z', media_ponderada:'Llené la media ponderada', tallo_hojas:'Armé el tallo y hojas', recodificar_item:'Recodifiqué el ítem', elegir_opcion:'Elegí una opción', ir_a_pestana:'Abrí una pestaña'};
+function describirAccion(nombre, a){
+  if(nombre==='elegir_opcion'){
+    const c = controlesPagina().find(x => x.id===a.control);
+    const o = c && c.opciones.find(x => normalizar(x.valor)===normalizar(a.opcion) || normalizar(x.texto)===normalizar(a.opcion));
+    return `✓ Elegí una opción — ${c ? c.nombre : a.control}: ${o ? o.texto : a.opcion}`;
+  }
+  if(nombre==='ir_a_pestana') return `✓ Abrí la pestaña ${nombrePestana(a.pestana)}`;
+  const det = Object.entries(a||{}).filter(([,v]) => !vacio(v)).map(([k,v]) => {
+    let t = aTexto(v); if(t.length>60) t = t.slice(0,57)+'…';
+    return `${k.replace(/_/g,' ')}: ${t}`;
+  }).join(' · ');
+  return `✓ ${NOMBRE_ACCION[nombre] || nombre}${det ? ' — ' + det : ''}`;
+}
+
+/* ----- interfaz del chat ----- */
+function mdBasico(txt){
+  const lineas = esc(txt).split('\n'); let h = '', lista = null;
+  const inline = s => s.replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+  const cerrar = () => { if(lista){ h += `</${lista}>`; lista = null; } };
+  for(const l of lineas){
+    let mm;
+    if((mm = l.match(/^\s*[-*•]\s+(.*)/))){ if(lista!=='ul'){ cerrar(); h+='<ul>'; lista='ul'; } h += `<li>${inline(mm[1])}</li>`; }
+    else if((mm = l.match(/^\s*\d+[.)]\s+(.*)/))){ if(lista!=='ol'){ cerrar(); h+='<ol>'; lista='ol'; } h += `<li>${inline(mm[1])}</li>`; }
+    else if(!l.trim()) cerrar();
+    else { cerrar(); h += `<p>${inline(l.replace(/^#+\s*/,''))}</p>`; }
+  }
+  cerrar();
+  return h;
+}
+function burbuja(clase, html){
+  const box = $('#chat'); const v = box.querySelector('.vacio'); if(v) v.remove();
+  const div = document.createElement('div'); div.className = 'msg '+clase; div.innerHTML = html;
+  box.appendChild(div); box.scrollTop = box.scrollHeight; return div;
+}
+function ayudaConexion(){
+  if(esClaude()) return 'No pude llegar a Claude. Revisá tu conexión a internet y que la clave esté guardada en «Conexión con Claude». Si estás en una red de la U o del trabajo, puede que bloquee api.anthropic.com.';
+  const origen = location.origin.startsWith('http') ? location.origin : '';
+  return `No pude conectarme con Ollama en ${ollamaURL()}.
+
+Revisá esto:
+1. Que Ollama esté abierto: en el navegador, ${ollamaURL()} tiene que decir «Ollama is running».
+2. Que Ollama acepte pedidos desde esta página. En Windows, en PowerShell:
+   setx OLLAMA_ORIGINS "${origen || '*'}"
+   Después cerrá Ollama del todo (clic derecho en la llama junto al reloj → Quit Ollama) y volvé a abrirlo.
+3. Si el navegador pregunta si la página puede acceder a dispositivos de tu red local, tocá «Permitir».`;
+}
+/* ----- detección de Ollama: versión, modelos instalados y modelos en memoria ----- */
+const GB = b => (b/1e9).toFixed(1).replace('.', SEP()) + ' GB';
+const ollama = {modelos:[], enMemoria:[], version:'', capacidades:{}};
+function chip(clase, txt){ const c = $('#o-chip'); c.className = 'chip ' + clase; c.textContent = txt; }
+async function getJSON(ruta, opciones){ const r = await fetch(ollamaURL()+ruta, opciones); if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }
+async function capacidadesDe(modelo){
+  if(ollama.capacidades[modelo]) return ollama.capacidades[modelo];
+  try{
+    const j = await getJSON('/api/show', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({model:modelo})});
+    let caps = j.capabilities;
+    if(!caps) caps = /\.Tools|tool_call/i.test(j.template||'') ? ['completion','tools'] : ['completion'];
+    return (ollama.capacidades[modelo] = caps);
+  }catch(e){ return null; }
+}
+async function detectarOllama(precalentar=false){
+  const out = $('#o-estado'); out.textContent = ''; out.className = 'estado';
+  chip('', 'revisando…');
+  try{
+    const [ver, tags, ps] = await Promise.all([
+      getJSON('/api/version').catch(() => ({})),
+      getJSON('/api/tags'),
+      getJSON('/api/ps').catch(() => ({models:[]}))
+    ]);
+    ollama.version = ver.version || '';
+    ollama.modelos = (tags.models||[]).slice().sort((a,b) => a.size-b.size);
+    ollama.enMemoria = ps.models || [];
+  }catch(e){
+    chip('err', 'sin conexión');
+    $('#o-conexion').open = true;
+    $('#o-info').innerHTML = '';
+    out.className = 'estado err'; out.style.whiteSpace = 'pre-wrap'; out.textContent = ayudaConexion();
+    return;
+  }
+  const nombres = ollama.modelos.map(m => m.name);
+  if(!nombres.length){
+    chip('err', 'sin modelos'); $('#o-conexion').open = true;
+    $('#o-info').innerHTML = `<p class="aviso">Ollama ${esc(ollama.version)} está corriendo, pero no tiene modelos instalados. En PowerShell: <code>ollama pull qwen2.5:3b</code></p>`;
+    return;
+  }
+  /* Elegir modelo: el guardado si existe; si no, uno que ya esté en memoria; si no, un qwen; si no, el primero */
+  const cargados = ollama.enMemoria.map(m => m.name);
+  let elegido = [modeloGuardado, modeloGuardado+':latest'].find(n => nombres.includes(n))
+    || cargados.find(n => nombres.includes(n))
+    || nombres.find(n => /^qwen2\.5:3b/.test(n)) || nombres.find(n => /^qwen/.test(n)) || nombres[0];
+  $('#o-modelo').innerHTML = ollama.modelos.map(m => {
+    const det = m.details || {};
+    return `<option value="${esc(m.name)}">${esc(m.name)} · ${GB(m.size)}${det.parameter_size?` · ${esc(det.parameter_size)}`:''}${cargados.includes(m.name)?' · en memoria':''}</option>`;
+  }).join('');
+  $('#o-modelo').value = elegido;
+  if(elegido !== modeloGuardado) guardarOllama();
+  await mostrarInfoModelos();
+  if(precalentar === true) precalentarModelo();
+}
+async function mostrarInfoModelos(){
+  const sel = $('#o-modelo').value, cargados = ollama.enMemoria;
+  const ram = navigator.deviceMemory;   /* aproximado; Chrome y Edge lo informan, con tope en 8 */
+  let h = `<p class="hint">Ollama ${esc(ollama.version || '(versión desconocida)')} · ${ollama.modelos.length} modelo(s) instalado(s)${ram ? ` · tu equipo informa unos ${ram} GB de memoria` : ''}</p>`;
+  h += `<table class="modelos"><thead><tr><th>Modelo</th><th>Tamaño</th><th>Estado</th></tr></thead><tbody>`;
+  h += ollama.modelos.map(m => {
+    const c = cargados.find(x => x.name===m.name);
+    const estado = c ? `<span class="etq">en memoria</span> ${c.size_vram ? (c.size_vram >= c.size*0.95 ? 'en tarjeta de video' : c.size_vram > 0 ? 'parte en video' : 'en procesador') : 'en procesador'}` : '<span class="hint">instalado</span>';
+    return `<tr class="${m.name===sel?'sel':''}"><td>${esc(m.name)}</td><td>${GB(m.size)}</td><td>${estado}</td></tr>`;
+  }).join('');
+  h += `</tbody></table>`;
+  const m = ollama.modelos.find(x => x.name===sel);
+  if(m && ram && m.size > ram*1e9*0.55) h += `<p class="aviso">Este modelo es grande para la memoria de tu equipo y puede ir lento. Probá con <code>qwen2.5:3b</code>.</p>`;
+  $('#o-info').innerHTML = h;
+  const cargado = cargados.some(x => x.name===sel);
+  chip('ok', `${sel}${cargado ? ' · listo' : ''}`);
+  const out = $('#o-estado'); out.className = 'estado ok';
+  out.textContent = cargado ? `Conectado. ${sel} ya está cargado en memoria.` : `Conectado. ${sel} se va a cargar en la primera pregunta (puede tardar unos segundos).`;
+}
+$('#o-modelo').addEventListener('change', async () => { guardarOllama(); await mostrarInfoModelos(); precalentarModelo(); });
+/* Carga el modelo en memoria apenas se abre el asistente, para que la primera pregunta no espere */
+async function precalentarModelo(){
+  const sel = $('#o-modelo').value;
+  if(!sel || ollama.enMemoria.some(x => x.name===sel)) return;
+  chip('', `cargando ${sel}…`);
+  try{
+    await fetch(ollamaURL()+'/api/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({model:sel, keep_alive:MANTENER})});
+    await refrescarEnMemoria();
+  }catch(e){ chip('err', 'no se pudo cargar'); }
+}
+$('#o-probar').onclick = () => detectarOllama(true);
+let refrescoPs = null;
+async function refrescarEnMemoria(){
+  try{ const ps = await getJSON('/api/ps'); ollama.enMemoria = ps.models || []; if(ollama.modelos.length) mostrarInfoModelos(); }catch(e){}
+}
+
+
+/* ----- Recuadro con los resultados exactos de la página (los números nunca los escribe el modelo) ----- */
+const ZONAS = {
+  cargar_datos:['#p-resumen .grid'], elegir_variable_csv:['#p-resumen .grid'],
+  tabla_frecuencias:['#f-tabla','#f-pres .res'], enunciado:['#f-tabla','#f-pres .res'],
+  curva_normal:['#n-res .res'], puntaje_z:['#z-calc .res'], media_ponderada:['#w-res .res'],
+  tallo_hojas:['#t-diag','#t-res'], recodificar_item:['#e-res']
+};
+function tarjetaResultados(nombres){
+  const vistos = new Set(), partes = [];
+  for(const n of nombres){
+    for(const sel of (ZONAS[n]||[])){
+      if(vistos.has(sel)) continue; vistos.add(sel);
+      $$(sel).forEach(el => { const c = el.cloneNode(true); c.querySelectorAll('details,.hint,button').forEach(x => x.remove()); c.removeAttribute('id'); if(c.textContent.trim()) partes.push(c.outerHTML); });
+    }
+  }
+  return partes.length ? `<div class="rt-tit">Resultado calculado por la página</div>${partes.join('')}` : '';
+}
+/* ----- Marca en la explicación los números que no coinciden con la página ----- */
+function numerosDe(texto){
+  return (String(texto).match(/-?\d+(?:[.,]\d+)?/g) || []).map(s => Number(s.replace(',', '.'))).filter(v => isFinite(v));
+}
+function marcarDudosos(html, permitidos){
+  let dudosos = 0;
+  const salida = html.replace(/(^|[^\w.,])(-?\d+(?:[.,]\d+)?)(?![\w])/g, (m, pre, tok) => {
+    const v = Number(tok.replace(',', '.'));
+    const dec = (tok.split(/[.,]/)[1] || '').length;
+    if(!isFinite(v) || (Number.isInteger(v) && Math.abs(v) <= 10 && !dec)) return m;
+    const ok = permitidos.some(a => Math.abs(a - v) < 1e-9 || Math.abs(redondearParidad(a, dec) - v) < 1e-9 || Math.abs(Number(a.toFixed(dec)) - v) < 1e-9);
+    if(ok) return m;
+    dudosos++;
+    return `${pre}<mark class="dudoso" title="Este número no aparece en los resultados de la página">${tok}</mark>`;
+  });
+  return {html: salida, dudosos};
+}
+
+const MANTENER = '30m';   /* el modelo queda cargado 30 minutos entre preguntas */
+/* ----- Paso 1: el modelo extrae los datos del enunciado en un formato fijo (JSON obligado por Ollama) ----- */
+const N = {type:'number'};
+const CAMPOS = {
+  cargar_datos:['datos','tipo_datos'],
+  elegir_variable_csv:['variable','filtro_columna','filtro_valor','tipo_datos'],
+  tabla_frecuencias:['amplitud','inicio','fin','orden','acumulacion','percentil','puntaje_rango_percentil'],
+  curva_normal:['tipo_normal','media','desviacion','valor1','valor2','sombreado'],
+  puntaje_z:['media','desviacion','x','z'],
+  media_ponderada:['valores','pesos'],
+  tallo_hojas:['tipo_tallo','tallo','num_tallo','posicion'],
+  recodificar_item:['valor','maximo'],
+  elegir_opcion:['control','opcion'],
+  ir_a_pestana:['pestana']
+};
+const RENOMBRAR = {tipo_datos:'tipo', tipo_normal:'tipo', tipo_tallo:'tipo'};
+const esquema = () => ({type:'object', required:['acciones'], properties:{acciones:{type:'array', items:{type:'object', required:['herramienta'], properties:{
+  control:{type:'string', enum:controlesPagina().map(c => c.id)}, opcion:{type:'string'},
+  pestana:{type:'string', enum:$$('#tabs button[data-tab]').map(b => b.dataset.tab)},
+  herramienta:{type:'string', enum:Object.keys(CAMPOS)},
+  datos:{type:'array', items:N}, tipo_datos:{type:'string', enum:['muestra','poblacion']},
+  variable:{type:'string'}, filtro_columna:{type:'string'}, filtro_valor:{type:'string'},
+  amplitud:N, inicio:N, fin:N, orden:{type:'string', enum:['desc','asc']}, acumulacion:{type:'string', enum:['bottom_up','top_down']},
+  percentil:N, puntaje_rango_percentil:N,
+  tipo_normal:{type:'string', enum:['A','B','C','D']}, media:N, desviacion:N, valor1:N, valor2:N,
+  sombreado:{type:'string', enum:['debajo','encima','entre','fuera']},
+  x:N, z:N, valores:{type:'array', items:N}, pesos:{type:'array', items:N},
+  tipo_tallo:{type:'string', enum:['dividido','estandar']}, tallo:N, num_tallo:{type:'integer', enum:[1,2]},
+  posicion:{type:'string', enum:['primera','segunda','tercera','cuarta','quinta','ultima','unica']},
+  valor:N, maximo:N
+}}}}});
+function instruccionesExtractor(){
+  const cols = est.csv ? [...$('#sel-col').options].map(o=>o.text).join(', ') : '';
+  return `Tu única tarea es convertir el mensaje del estudiante en acciones para una página de estadística. Respondé solo con el JSON pedido. No calcules nada.
+
+Herramientas:
+- cargar_datos: el estudiante da una lista de números para analizar. Campos: datos (lista de números), tipo_datos ("muestra" o "poblacion", solo si lo dice).
+- elegir_variable_csv: pide analizar una columna del archivo CSV.${cols ? ` Columnas disponibles: ${cols}.` : ' (No hay CSV cargado.)'} Campos: variable, filtro_columna, filtro_valor (ej. analizar solo Grupo = Control).
+- tabla_frecuencias: tabla de frecuencias, percentil o rango percentil de los datos ya cargados. Campos: amplitud, inicio, fin, orden, acumulacion, percentil, puntaje_rango_percentil.
+- curva_normal: preguntas sobre una distribución normal con media y desviación estándar. tipo_normal:
+  A = dan un puntaje y piden su z, el área o porcentaje por debajo o por encima, o su percentil (valor1 = el puntaje). Si pregunta "por encima" o "más de", sombreado "encima".
+  B = piden el área o porcentaje entre dos puntajes (valor1 y valor2).
+  C = dan un percentil y piden el puntaje (valor1 = el percentil).
+  D = piden los puntajes que encierran un porcentaje central (valor1 = el porcentaje, ej. 95).
+- puntaje_z: convertir un puntaje a z (campo x) o un z a puntaje (campo z), con media y desviacion.
+- media_ponderada: campos valores y pesos.
+- tallo_hojas: diagrama de tallo y hojas; para buscar una hoja: tallo (la decena), num_tallo (1 = hojas 0 a 4, 2 = hojas 5 a 9), posicion.
+- recodificar_item: ítem inverso; campos valor y maximo de la escala.
+- elegir_opcion: cambiar una opción de la página (lista desplegable o casilla) cuando el estudiante lo pide o el ejercicio lo exige y ninguna otra herramienta tiene ese campo. Campos: control (el id exacto) y opcion (el valor exacto; en casillas "si" o "no"). Opciones de la página ahora:
+${catalogoOpciones()}
+- ir_a_pestana: abrir una pestaña para que el estudiante la vea. Campo pestana: ${$$('#tabs button[data-tab]').map(b => `${b.dataset.tab} (${b.textContent.trim()})`).join(', ')}.
+
+Reglas:
+- Incluí SOLO los campos que el mensaje da. Omití los demás (no pongas 0 en su lugar).
+- Usá punto decimal en los números (72.5).
+- Si piden varias cosas, poné varias acciones en orden (por ejemplo cargar_datos y después tabla_frecuencias).
+- Si el mensaje corrige un dato de antes ("la desviación es 12"), repetí la acción anterior con el dato corregido.
+- Si es una pregunta teórica o no trae datos para calcular, devolvé {"acciones": []}.
+
+Ejemplos:
+"Media 100 y desviación 15. ¿Qué porcentaje está entre 85 y 115?" → {"acciones":[{"herramienta":"curva_normal","tipo_normal":"B","media":100,"desviacion":15,"valor1":85,"valor2":115}]}
+"Con media 50 y s 10, ¿qué proporción saca más de 65?" → {"acciones":[{"herramienta":"curva_normal","tipo_normal":"A","media":50,"desviacion":10,"valor1":65,"sombreado":"encima"}]}
+"Datos: 12 15 18 20 22. Sacá el percentil 75 con amplitud 5" → {"acciones":[{"herramienta":"cargar_datos","datos":[12,15,18,20,22]},{"herramienta":"tabla_frecuencias","amplitud":5,"percentil":75}]}
+"Poné el separador decimal en punto" → {"acciones":[{"herramienta":"elegir_opcion","control":"a-sep","opcion":"punto"}]}
+"En la curva normal no uses la tabla de Pagano" → {"acciones":[{"herramienta":"elegir_opcion","control":"n-tabla","opcion":"no"}]}
+"¿Qué es la mediana?" → {"acciones":[]}`;
+}
+function limpiarAccion(acc){
+  const h = acc.herramienta, campos = CAMPOS[h] || [], args = {};
+  for(const c of campos){ if(!vacio(acc[c])) args[RENOMBRAR[c] || c] = acc[c]; }
+  if(h==='curva_normal' && args.tipo!=='B') delete args.valor2;
+  return {nombre:h, args};
+}
+async function extraerAcciones(txt){
+  const previos = chat.historial.filter(m => m.role==='user' || m.role==='assistant').slice(-4);
+  let obj;
+  if(esClaude()){
+    obj = await extraerConClaude(instruccionesExtractor(), [...previos, {role:'user', content:txt}]);
+  } else {
+    const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
+      body: JSON.stringify({model:$('#o-modelo').value, stream:false, format:esquema(), keep_alive:MANTENER, options:{temperature:0, num_ctx:6144, num_predict:400},
+        messages:[{role:'system', content:instruccionesExtractor()}, ...previos, {role:'user', content:txt}]})});
+    if(!r.ok) await errorOllama(r);
+    const j = await r.json();
+    try{ obj = JSON.parse((j.message && j.message.content) || ''); }catch(e){ obj = {}; }
+  }
+  return (Array.isArray(obj && obj.acciones) ? obj.acciones : []).filter(a => a && CAMPOS[a.herramienta]).map(limpiarAccion);
+}
+async function errorOllama(r){
+  const t = await r.text(), mod = $('#o-modelo').value;
+  if(r.status===404) throw new Error(`El modelo ${mod} no está instalado. En PowerShell: ollama pull ${mod}`);
+  throw new Error(`Ollama respondió con un error (${r.status}): ${t.slice(0,300)}`);
+}
+
+/* ----- Paso 2: el modelo explica, con los resultados que calculó la página ----- */
+async function explicar(div, resultados){
+  const sistema = INSTRUCCIONES + (resultados
+    ? `\n\nA pedido del estudiante, la página acaba de llenar los campos y calcular esto:\n${resultados}\n\nEl estudiante ya ve esos resultados en un recuadro arriba de tu mensaje. NO repitas la tabla ni hagas cuentas. Explicá en pocas oraciones qué significan los resultados y cómo se interpretan. Si mencionás un número, copialo idéntico de los resultados, con los mismos decimales. Si algo no se pudo hacer, explicá por qué y qué dato falta.`
+    : contextoActual());
+  if(esClaude()) return explicarConClaude(div, sistema);
+  const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
+    body: JSON.stringify({model:$('#o-modelo').value, stream:true, keep_alive:MANTENER, options:{temperature:0.1, num_ctx:4096, num_predict:450},
+      messages:[{role:'system', content:sistema}, ...chat.historial]})});
+  if(!r.ok) await errorOllama(r);
+  const lector = r.body.getReader(), dec = new TextDecoder();
+  let buf = '', contenido = '';
+  while(true){
+    const {value, done} = await lector.read(); if(done) break;
+    buf += dec.decode(value, {stream:true});
+    const lineas = buf.split('\n'); buf = lineas.pop();
+    for(const l of lineas){
+      if(!l.trim()) continue;
+      const j = JSON.parse(l);
+      if(j.error) throw new Error(j.error);
+      if(j.message && j.message.content){ contenido += j.message.content; div.innerHTML = mdBasico(contenido); $('#chat').scrollTop = $('#chat').scrollHeight; }
+    }
+  }
+  return contenido;
+}
+
+/* ---------- CLAUDE (API de Anthropic, en la nube) ----------
+   La clave NO va en este archivo: se pega en el panel y queda solo en el navegador (localStorage). */
+const CLAUDE_URL = 'https://api.anthropic.com/v1';
+const MODELOS_CLAUDE = [
+  {id:'claude-haiku-5-5', nombre:'Claude Haiku 5.5 · rápido y económico'},
+  {id:'claude-sonnet-5-5', nombre:'Claude Sonnet 5.5 · equilibrado'},
+  {id:'claude-opus-5-5', nombre:'Claude Opus 5.5 · el más potente y caro'}
+];
+const cfgIA = {proveedor:'ollama', claveClaude:'', modeloClaude:'claude-haiku-5-5'};
+try{ Object.assign(cfgIA, JSON.parse(localStorage.getItem('ed_ia')) || {}); }catch(e){}
+function guardarIA(){ try{ localStorage.setItem('ed_ia', JSON.stringify(cfgIA)); }catch(e){} }
+function esClaude(){ return cfgIA.proveedor === 'claude'; }
+function chipC(clase, txt){ const c = $('#c-chip'); c.className = 'chip ' + clase; c.textContent = txt; }
+const nombreModeloClaude = id => { const o = [...$('#c-modelo').options].find(x => x.value===id); return o ? o.text.split(' · ')[0] : id; };
+function cabecerasClaude(){
+  return {'x-api-key':cfgIA.claveClaude, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true', 'content-type':'application/json'};
+}
+async function errorClaude(r){
+  let msg = ''; try{ const j = await r.json(); msg = (j.error && j.error.message) || ''; }catch(e){}
+  if(r.status===401) throw new Error('Claude rechazó la clave de API. Revisá que la copiaste completa (empieza con sk-ant-) y guardala de nuevo.');
+  if(/credit balance/i.test(msg)) throw new Error('Tu cuenta de Claude no tiene crédito suficiente. Cargá crédito en console.anthropic.com → Billing.');
+  if(r.status===403) throw new Error('Tu clave no tiene permiso para esto. ' + msg);
+  if(r.status===404) throw new Error(`El modelo ${cfgIA.modeloClaude} no está disponible para tu cuenta. Elegí otro en «Conexión con Claude».`);
+  if(r.status===429) throw new Error('Se pasó el límite de pedidos por minuto de tu cuenta. Esperá un momento y probá de nuevo.');
+  if(r.status===529 || r.status===503) throw new Error('Claude está saturado en este momento. Probá de nuevo en unos segundos.');
+  throw new Error(`Claude respondió con un error (${r.status}): ${msg.slice(0,300)}`);
+}
+/* Claude pide que los mensajes alternen usuario/asistente, empiecen por el usuario y no estén vacíos */
+function mensajesClaude(lista){
+  const out = [];
+  for(const m of lista){
+    if(m.role!=='user' && m.role!=='assistant') continue;
+    const c = String(m.content || '').trim(); if(!c) continue;
+    if(out.length && out[out.length-1].role===m.role) out[out.length-1].content += '\n\n' + c;
+    else out.push({role:m.role, content:c});
+  }
+  while(out.length && out[0].role!=='user') out.shift();
+  return out;
+}
+function llenarModelosClaude(lista){
+  const conocidos = MODELOS_CLAUDE.filter(m => !lista || lista.some(x => x.id===m.id));
+  const otros = (lista || []).filter(x => !MODELOS_CLAUDE.some(m => m.id===x.id));
+  let h = conocidos.map(m => `<option value="${esc(m.id)}">${esc(m.nombre)}</option>`).join('');
+  if(otros.length) h += `<optgroup label="Otros modelos de tu cuenta">${otros.map(m => `<option value="${esc(m.id)}">${esc(m.nombre)}</option>`).join('')}</optgroup>`;
+  $('#c-modelo').innerHTML = h;
+  const ids = [...$('#c-modelo').options].map(o => o.value);
+  if(!ids.includes(cfgIA.modeloClaude)){ cfgIA.modeloClaude = ids.includes('claude-haiku-5-5') ? 'claude-haiku-5-5' : ids[0]; guardarIA(); }
+  $('#c-modelo').value = cfgIA.modeloClaude;
+}
+async function detectarClaude(){
+  const out = $('#o-estado'); out.className = 'estado'; out.style.whiteSpace = ''; out.textContent = '';
+  if(!cfgIA.claveClaude){
+    chipC('err', 'sin clave'); $('#c-conexion').open = true;
+    out.className = 'estado err'; out.textContent = 'Pegá tu clave de API de Claude y tocá «Guardar clave».';
+    return false;
+  }
+  chipC('', 'revisando…');
+  try{
+    const r = await fetch(CLAUDE_URL + '/models?limit=100', {headers:cabecerasClaude()});
+    if(!r.ok) await errorClaude(r);
+    const j = await r.json();
+    const lista = (j.data || []).map(m => ({id:m.id, nombre:m.display_name || m.id}));
+    if(lista.length) llenarModelosClaude(lista);
+    chipC('ok', nombreModeloClaude(cfgIA.modeloClaude)); $('#c-conexion').open = false;
+    out.className = 'estado ok'; out.textContent = `Conectado con Claude. Modelo: ${nombreModeloClaude(cfgIA.modeloClaude)}. Cada pregunta gasta un poco de tu crédito.`;
+    return true;
+  }catch(e){
+    chipC('err', 'sin conexión'); $('#c-conexion').open = true;
+    out.className = 'estado err'; out.style.whiteSpace = 'pre-wrap';
+    out.textContent = e instanceof TypeError ? ayudaConexion() : e.message;
+    return false;
+  }
+}
+/* Paso 1 con Claude: se le obliga a usar una herramienta cuyo formato es el mismo esquema que usa Ollama */
+async function extraerConClaude(sistema, mensajes){
+  const r = await fetch(CLAUDE_URL + '/messages', {method:'POST', headers:cabecerasClaude(), signal:chat.control.signal,
+    body: JSON.stringify({model:cfgIA.modeloClaude, max_tokens:1024, system:sistema, messages:mensajesClaude(mensajes),
+      tools:[{name:'acciones_pagina', description:'Acciones que la página de estadística tiene que hacer con lo que pide el estudiante. Lista vacía si no hay nada que hacer en la página.', input_schema:esquema()}],
+      tool_choice:{type:'tool', name:'acciones_pagina'}})});
+  if(!r.ok) await errorClaude(r);
+  const j = await r.json();
+  const uso = (j.content || []).find(b => b.type==='tool_use');
+  return (uso && uso.input) || {acciones:[]};
+}
+/* Paso 2 con Claude: la explicación llega de a poco (streaming) */
+async function explicarConClaude(div, sistema){
+  const r = await fetch(CLAUDE_URL + '/messages', {method:'POST', headers:cabecerasClaude(), signal:chat.control.signal,
+    body: JSON.stringify({model:cfgIA.modeloClaude, max_tokens:1500, stream:true, system:sistema, messages:mensajesClaude(chat.historial)})});
+  if(!r.ok) await errorClaude(r);
+  const lector = r.body.getReader(), dec = new TextDecoder();
+  let buf = '', contenido = '';
+  while(true){
+    const {value, done} = await lector.read(); if(done) break;
+    buf += dec.decode(value, {stream:true});
+    const lineas = buf.split('\n'); buf = lineas.pop();
+    for(const l of lineas){
+      if(!l.startsWith('data:')) continue;
+      let j; try{ j = JSON.parse(l.slice(5).trim()); }catch(e){ continue; }
+      if(j.type==='error') throw new Error('Claude: ' + ((j.error && j.error.message) || 'error desconocido'));
+      if(j.type==='content_block_delta' && j.delta && j.delta.type==='text_delta'){
+        contenido += j.delta.text; div.innerHTML = mdBasico(contenido); $('#chat').scrollTop = $('#chat').scrollHeight;
+      }
+    }
+  }
+  return contenido;
+}
+/* ---------- MODO AGENTE: Claude ve toda la página y la maneja paso a paso ---------- */
+const tabDe = el => { const s = el && el.closest('section'); return s && s.id.startsWith('p-') ? s.id.slice(2) : null; };
+function etiquetaDe(el){
+  const lab = el.closest('label'); if(!lab) return el.placeholder || el.id;
+  const c = lab.cloneNode(true); c.querySelectorAll('select,input,textarea,.hint,option').forEach(x => x.remove());
+  return c.textContent.replace(/\s+/g,' ').trim() || el.id;
+}
+const camposEscribibles = () => $$('main input, main textarea').filter(el => el.id && el.type!=='file' && el.type!=='checkbox');
+const botonesPagina = () => $$('main button[id]').filter(b => !/copiar/.test(b.id) && b.id!=='n-desc');
+function textoVisible(el){
+  if(!el) return '';
+  const c = el.cloneNode(true); c.querySelectorAll('select,option,input,textarea,button,[hidden]').forEach(x => x.remove());
+  return textoPlano(c);
+}
+const pestanaActiva = () => ($('#tabs button.on') || {dataset:{}}).dataset.tab;
+function verPantalla(){
+  const tab = pestanaActiva(), fuente = ($('[data-fuente].on') || {dataset:{}}).dataset.fuente;
+  const oculto = el => el.closest('[hidden]') && !el.closest('section.panel[hidden]') ? ' (en otra vista)' : '';
+  let t = `Pestaña abierta: ${nombrePestana(tab)} (${tab}). Paso 1, forma de cargar datos: ${fuente}.\n`;
+  t += 'Campos para escribir (id · dónde · etiqueta = valor actual):\n' + camposEscribibles().map(el => `  · ${el.id} · ${nombrePestana(tabDe(el))} · ${etiquetaDe(el)}${oculto(el)} = ${JSON.stringify(el.value.slice(0,400))}`).join('\n');
+  t += '\nListas y casillas (id · dónde · etiqueta · valor actual · opciones):\n' + catalogoOpciones();
+  t += '\nBotones: ' + botonesPagina().map(b => `${b.id} «${b.textContent.trim()}» (${nombrePestana(tabDe(b))})`).join('; ');
+  const msg = $('#estado-datos').textContent.trim(); if(msg) t += `\nMensaje del paso 1: ${msg}`;
+  if(est.csv) t += `\nHay un CSV cargado. ${$('#csv-info').textContent.trim()}`;
+  const en = textoVisible($('#enunciado-res')); if(en && fuente==='enunciado') t += `\nResultado de leer el enunciado:\n${en.slice(0,2500)}`;
+  const panel = tab && $('#p-'+tab); if(panel) t += `\n\nLo que se ve en la pestaña ${nombrePestana(tab)}:\n${textoVisible(panel).slice(0,4000)}`;
+  return t;
+}
+function despuesDelPaso(){
+  const tab = pestanaActiva(), msg = $('#estado-datos').textContent.trim();
+  return (msg ? `\nMensaje del paso 1: ${msg}` : '') + `\nPestaña abierta: ${nombrePestana(tab)}.` + (tab ? `\nSe ve:\n${textoVisible($('#p-'+tab)).slice(0,2500)}` : '');
+}
+function senalar(texto, etiqueta){
+  const limpio = x => String(x ?? '').replace(/\s+/g,' ').trim();
+  const busca = limpio(texto), cerca = normalizar(limpio(etiqueta));
+  if(!busca) return 'No me dijiste qué señalar.';
+  const zonas = [$('#p-'+pestanaActiva()), $('#sec-datos')].filter(Boolean);
+  const todos = [];
+  for(const z of zonas) for(const el of z.querySelectorAll('*')){
+    if(el.closest('[hidden]') || el.closest('details:not([open]) > :not(summary)') || ['SELECT','OPTION','TEXTAREA','INPUT','BUTTON','SCRIPT','STYLE'].includes(el.tagName)) continue;
+    const t = limpio(el.textContent);
+    if(t.includes(busca)) todos.push({el, t});
+  }
+  if(!todos.length) return `No encontré «${busca}» en lo que se ve ahora. Revisá que esté abierta la pestaña correcta y que el texto sea idéntico al de la página.`;
+  const bloque = el => el.closest('.dato, tr, li, .estado, p') || el;
+  let elegido;
+  if(cerca){
+    /* el elemento más chico que tenga el número y la etiqueta juntos */
+    const ambos = todos.filter(x => normalizar(x.t).includes(cerca)).sort((a,b) => a.t.length - b.t.length);
+    if(!ambos.length) return `Encontré «${busca}», pero no junto a «${etiqueta}». Mirá la pantalla y probá con otra etiqueta.`;
+    elegido = ambos[0].el;
+  } else {
+    /* lugares mínimos donde aparece el número: si hay más de uno, pedir la etiqueta */
+    const minimos = todos.filter(x => ![...x.el.children].some(h => limpio(h.textContent).includes(busca)));
+    const bloques = [...new Set(minimos.map(x => bloque(x.el)))];
+    if(bloques.length > 1) return `«${busca}» aparece en ${bloques.length} lugares: ${bloques.slice(0,6).map(b => '«' + limpio(b.textContent).slice(0,70) + '»').join('; ')}. Repetí senalar_respuesta con el campo etiqueta (el texto que acompaña a la respuesta, por ejemplo "Percentil 75").`;
+    elegido = minimos[0].el;
+  }
+  /* en listas de definición (etiqueta | valor) se marca solo el par que corresponde */
+  const dl = elegido.tagName==='DL' ? elegido : null;
+  if(dl){
+    const dds = [...dl.querySelectorAll('dd')].filter(d => limpio(d.textContent).includes(busca));
+    const par = dds.map(d => { let dt = d.previousElementSibling; while(dt && dt.tagName!=='DT') dt = dt.previousElementSibling; return {d, dt}; })
+      .find(x => !cerca || (x.dt && normalizar(limpio(x.dt.textContent)).includes(cerca))) || (dds[0] && {d:dds[0], dt:null});
+    if(par){
+      [par.dt, par.d].filter(Boolean).forEach(x => x.classList.add('senalado'));
+      par.d.scrollIntoView({behavior:'smooth', block:'center'});
+      return `Señalé en la pantalla: «${par.dt ? limpio(par.dt.textContent) + ': ' : ''}${limpio(par.d.textContent)}».`;
+    }
+  }
+  const el = bloque(elegido);
+  el.classList.add('senalado'); el.scrollIntoView({behavior:'smooth', block:'center'});
+  return `Señalé en la pantalla: «${limpio(el.textContent).slice(0,200)}».`;
+}
+const DESC_ACCION = {
+  cargar_datos:'Cargar una lista de números en la página y analizarla (resumen).',
+  elegir_variable_csv:'Elegir una columna del CSV ya cargado (con filtro opcional) y analizarla.',
+  tabla_frecuencias:'Armar la tabla de frecuencias, un percentil o un rango percentil con los datos ya cargados.',
+  curva_normal:'Resolver una pregunta de curva normal. tipo_normal: A = de un puntaje a z, áreas y percentil (valor1 = puntaje); B = área entre dos puntajes; C = de un percentil al puntaje; D = límites de un porcentaje central.',
+  puntaje_z:'Convertir un puntaje a z (campo x) o un z a puntaje (campo z), con media y desviacion.',
+  media_ponderada:'Calcular una media ponderada con valores y pesos.',
+  tallo_hojas:'Armar el diagrama de tallo y hojas de los datos cargados y, si se pide, buscar una hoja.',
+  recodificar_item:'Recodificar un ítem inverso (valor y maximo de la escala).'
+};
+function herramientasAgente(){
+  const props = esquema().properties.acciones.items.properties;
+  const t = Object.keys(DESC_ACCION).map(n => ({name:n, description:DESC_ACCION[n],
+    input_schema:{type:'object', properties:Object.fromEntries(CAMPOS[n].map(c => [c, props[c]]))}}));
+  const ids = l => l.map(x => x.id);
+  t.push(
+    {name:'ver_pantalla', description:'Volver a mirar toda la página: pestaña abierta, campos con sus valores, opciones, botones y resultados visibles.', input_schema:{type:'object', properties:{}}},
+    {name:'escribir', description:'Escribir un valor en un campo o cuadro de texto de la página (abre su pestaña si hace falta). Para números usá coma o punto decimal.', input_schema:{type:'object', required:['campo','valor'], properties:{campo:{type:'string', enum:ids(camposEscribibles())}, valor:{type:'string'}}}},
+    {name:'elegir', description:'Elegir una opción de una lista desplegable o marcar/desmarcar una casilla ("si" o "no").', input_schema:{type:'object', required:['control','opcion'], properties:{control:{type:'string', enum:ids(controlesPagina())}, opcion:{type:'string'}}}},
+    {name:'tocar_boton', description:'Tocar un botón de la página (por ejemplo Analizar o Leer enunciado y resolver).', input_schema:{type:'object', required:['boton'], properties:{boton:{type:'string', enum:ids(botonesPagina())}}}},
+    {name:'ir_a_pestana', description:'Abrir una pestaña de la página.', input_schema:{type:'object', required:['pestana'], properties:{pestana:{type:'string', enum:$$('#tabs button[data-tab]').map(b => b.dataset.tab)}}}},
+    {name:'senalar_respuesta', description:'Resaltar en la pantalla dónde está una respuesta válida. texto = el número o texto EXACTO como aparece en la pestaña abierta (por ejemplo "90,88"); etiqueta = lo que lo acompaña (por ejemplo "Área por debajo de X"). Abrí antes la pestaña correcta.', input_schema:{type:'object', required:['texto'], properties:{texto:{type:'string'}, etiqueta:{type:'string', description:'Texto que acompaña a la respuesta en la página (ej. "Percentil 75" o "Área por debajo de X"), para no confundirla con otro número igual.'}}}}
+  );
+  return t;
+}
+function ejecutarHerramienta(nombre, a, hechos){
+  if(nombre==='ver_pantalla') return verPantalla();
+  if(nombre==='senalar_respuesta') return senalar(a.texto, a.etiqueta);
+  if(nombre==='ir_a_pestana'){ const r = ACCIONES.ir_a_pestana(a); hechos.push(ZONA_DE_PESTANA[a.pestana]); return r; }
+  if(nombre==='elegir'){ chat.ultimaPestana = null; const r = ACCIONES.elegir_opcion(a); hechos.push(ZONA_DE_PESTANA[chat.ultimaPestana]); chat.ultimaPestana = null; return r + despuesDelPaso(); }
+  if(nombre==='escribir'){
+    const el = $('#'+a.campo); if(!el || !camposEscribibles().includes(el)) throw new Error(`No existe el campo «${a.campo}».`);
+    const tab = tabDe(el); if(tab) irA(tab);
+    const h = el.closest('[hidden]'); if(h && h.id && h.id.startsWith('fuente-')) $(`[data-fuente="${h.id.slice(7)}"]`).click();
+    el.value = String(a.valor ?? ''); el.classList.add('llenado'); setTimeout(() => el.classList.remove('llenado'), 2500);
+    el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true}));
+    hechos.push(ZONA_DE_PESTANA[tab]);
+    return `Escribí en «${etiquetaDe(el)}».` + despuesDelPaso();
+  }
+  if(nombre==='tocar_boton'){
+    const b = $('#'+a.boton); if(!b || !botonesPagina().includes(b)) throw new Error(`No existe el botón «${a.boton}».`);
+    const tab = tabDe(b); if(tab) irA(tab);
+    b.click(); hechos.push(ZONA_DE_PESTANA[pestanaActiva()]);
+    return `Toqué «${b.textContent.trim()}».` + despuesDelPaso();
+  }
+  if(CAMPOS[nombre] && ACCIONES[nombre]){ const {nombre:n, args} = limpiarAccion({herramienta:nombre, ...a}); hechos.push(n); return ACCIONES[n](args); }
+  throw new Error(`No conozco la herramienta «${nombre}».`);
+}
+function describirPaso(nombre, a){
+  if(nombre==='escribir'){ const el = $('#'+a.campo); let v = String(a.valor ?? ''); if(v.length>60) v = v.slice(0,57)+'…'; return `✓ Escribí en ${el ? etiquetaDe(el) : a.campo}: ${v}`; }
+  if(nombre==='elegir') return describirAccion('elegir_opcion', a);
+  if(nombre==='tocar_boton'){ const b = $('#'+a.boton); return `✓ Toqué «${b ? b.textContent.trim() : a.boton}»`; }
+  if(nombre==='senalar_respuesta') return `👉 Te señalé en la página: ${a.texto}`;
+  return describirAccion(nombre, a);
+}
+const REGLAS_AGENTE = `
+
+MODO AGENTE: podés ver y manejar toda la página con las herramientas.
+- Con el mensaje del estudiante te llega una foto en texto de la página: pestaña abierta, campos con sus valores, listas con sus opciones, botones y los resultados visibles. Usá ver_pantalla cuando necesites mirar de nuevo.
+- Usá las herramientas grandes (curva_normal, tabla_frecuencias, cargar_datos, etc.) cuando sirvan. Para todo lo demás usá escribir, elegir y tocar_boton. Si escribís datos en un cuadro, tocá después el botón que los procesa (por ejemplo btn-analizar o btn-enunciado).
+- Revisá lo que devuelve cada paso. Si algo quedó mal o hay un mensaje de error, corregilo.
+- Cuando tengas la respuesta, dejala a la vista: abrí la pestaña donde está y usá senalar_respuesta con el número exacto como aparece en la página y su etiqueta (lo que dice al lado). Si son varias respuestas, señalá cada una.
+- No toques «Volver a los valores del curso» ni cambies decimales, separador o valores perdidos si el estudiante no lo pide.
+- Si el mensaje trae «Texto que marqué en la página», eso es lo que el estudiante quiere que analices o resuelvas: trabajá sobre ese texto y señalá en la pantalla las respuestas que salgan de él.
+- Si el estudiante solo pregunta algo teórico, respondé sin tocar la página.
+- Al terminar, escribí tu respuesta para el estudiante.`;
+async function agenteClaude(txt){
+  $$('.senalado').forEach(e => e.classList.remove('senalado'));
+  const usarHerr = $('#o-acciones').checked;
+  const sistema = INSTRUCCIONES + REGLAS_AGENTE + ($('#o-explicar').checked ? '' : '\n- El estudiante quiere ir rápido: al terminar respondé en una o dos oraciones, solo qué hiciste y dónde está la respuesta.')
+    + (usarHerr ? '' : '\n- Ahora NO podés tocar la página: solo mirala y respondé.');
+  const foto = verPantalla();
+  const conv = mensajesClaude([...chat.historial.slice(-6), {role:'user', content:txt}]);
+  conv[conv.length-1].content += `\n\n[Así está la página ahora]\n${foto}`;
+  const hechos = []; let vistos = foto + '\n' + contextoActual(), final = '';
+  const aviso = burbuja('paso', 'Mirando la página…');
+  for(let paso = 1; paso <= 15; paso++){
+    const cuerpo = {model:cfgIA.modeloClaude, max_tokens:2000, system:sistema, messages:conv};
+    if(usarHerr) cuerpo.tools = herramientasAgente();
+    const r = await fetch(CLAUDE_URL + '/messages', {method:'POST', headers:cabecerasClaude(), signal:chat.control.signal, body:JSON.stringify(cuerpo)});
+    if(!r.ok) await errorClaude(r);
+    const j = await r.json(), bloques = j.content || [];
+    conv.push({role:'assistant', content:bloques});
+    const usos = bloques.filter(b => b.type==='tool_use');
+    const texto = bloques.filter(b => b.type==='text').map(b => b.text).join('\n').trim();
+    if(!usos.length){ final = texto; break; }
+    if(texto) burbuja('paso', esc(texto.length > 240 ? texto.slice(0,237)+'…' : texto));
+    const devoluciones = [];
+    for(const u of usos){
+      let res, error = false;
+      try{ res = String(ejecutarHerramienta(u.name, u.input || {}, hechos)); }catch(e){ res = 'Error: ' + e.message; error = true; }
+      if(u.name!=='ver_pantalla' && !(u.name==='senalar_respuesta' && !error && !res.startsWith('Señalé'))) burbuja(error ? 'err' : 'accion', esc(error ? res : describirPaso(u.name, u.input || {})));
+      vistos += '\n' + res;
+      devoluciones.push({type:'tool_result', tool_use_id:u.id, content:res.slice(0,8000), ...(error ? {is_error:true} : {})});
+    }
+    conv.push({role:'user', content:devoluciones});
+    aviso.textContent = `Trabajando… (paso ${paso + 1})`; $('#chat').appendChild(aviso); $('#chat').scrollTop = $('#chat').scrollHeight;
+  }
+  aviso.remove();
+  if(!final) final = 'Hice varios pasos pero no llegué a una respuesta final. Revisá lo que quedó en la página y decime cómo seguimos.';
+  const tarjeta = tarjetaResultados(hechos.filter(Boolean));
+  if(tarjeta) burbuja('resultado', tarjeta);
+  const {html, dudosos} = marcarDudosos(mdBasico(final), numerosDe(vistos + '\n' + txt));
+  burbuja('ia', html + (dudosos ? `<p class="aviso">⚠ Marqué ${dudosos} número(s) que no coinciden con lo que calculó la página. Usá los del recuadro de resultados.</p>` : ''));
+  chat.historial.push({role:'user', content:txt}, {role:'assistant', content:final});
+}
+
+/* Cambiar entre Ollama y Claude */
+const PIE_OLLAMA = $('#o-pie').textContent;
+function aplicarProveedor(){
+  $('#ia-proveedor').value = cfgIA.proveedor;
+  $('#o-conexion').hidden = esClaude(); $('#c-conexion').hidden = !esClaude(); $('#o-agente-l').hidden = !esClaude();
+  $('#o-pie').textContent = esClaude()
+    ? 'Claude corre en la nube de Anthropic: tus mensajes y los resultados en pantalla se envían allá, y cada pregunta gasta un poco de tu crédito. Los números los calcula la página; Claude llena los campos, elige opciones y explica. Revisá los datos que puso.'
+    : PIE_OLLAMA;
+}
+$('#ia-proveedor').addEventListener('change', e => {
+  if(chat.control) chat.control.abort();
+  cfgIA.proveedor = e.target.value; guardarIA(); aplicarProveedor(); conectarAsistente(true);
+});
+$('#c-guardar').onclick = () => {
+  const k = $('#c-clave').value.trim();
+  if(!k){ $('#o-estado').className = 'estado err'; $('#o-estado').textContent = 'El campo de la clave está vacío.'; return; }
+  if(!/^sk-ant-/.test(k)){ $('#o-estado').className = 'estado err'; $('#o-estado').textContent = 'Esa no parece una clave de Claude: tiene que empezar con sk-ant-'; return; }
+  cfgIA.claveClaude = k; guardarIA(); detectarClaude();
+};
+$('#c-olvidar').onclick = () => { cfgIA.claveClaude = ''; $('#c-clave').value = ''; guardarIA(); detectarClaude(); };
+$('#c-probar').onclick = () => detectarClaude();
+$('#c-modelo').addEventListener('change', e => { cfgIA.modeloClaude = e.target.value; guardarIA(); chipC('ok', nombreModeloClaude(cfgIA.modeloClaude)); if(cfgIA.claveClaude){ $('#o-estado').className = 'estado ok'; $('#o-estado').textContent = `Listo. Ahora uso ${nombreModeloClaude(cfgIA.modeloClaude)}.`; } });
+$('#c-clave').addEventListener('keydown', e => { if(e.key==='Enter') $('#c-guardar').click(); });
+$('#c-clave').value = cfgIA.claveClaude;
+llenarModelosClaude(null);
+aplicarProveedor();
+
+/* ---------- TEXTO MARCADO: seleccioná algo en la página y preguntale al asistente ---------- */
+const marcado = {texto:'', lugar:''};
+let selPendiente = null;
+const barra = document.createElement('div');
+barra.id = 'sel-barra'; barra.hidden = true;
+barra.innerHTML = '<button data-q="resolver" class="prim">✨ Resolver y marcar</button><button data-q="explicar">💡 Explicar</button><button data-q="preguntar">💬 Preguntar…</button>';
+document.body.appendChild(barra);
+barra.addEventListener('mousedown', e => e.preventDefault());   /* que no se pierda la selección al tocar la barra */
+function lugarDe(nodo){
+  const el = nodo && (nodo.nodeType===1 ? nodo : nodo.parentElement); if(!el) return 'la página';
+  const sec = el.closest('section');
+  const base = !sec ? 'la página' : sec.id==='sec-datos' ? 'paso 1 · Datos' : `pestaña ${nombrePestana(tabDe(el))}`;
+  const campo = el.closest('textarea, input');
+  return base + (campo ? ` · cuadro «${etiquetaDe(campo)}»` : '');
+}
+function leerSeleccion(){
+  const a = document.activeElement;
+  if(a && a.closest('main') && (a.tagName==='TEXTAREA' || (a.tagName==='INPUT' && ['text','search','number'].includes(a.type)))){
+    const t = a.value.substring(a.selectionStart ?? 0, a.selectionEnd ?? 0);
+    if(t.trim()) return {texto:t, lugar:lugarDe(a), rect:a.getBoundingClientRect(), campo:a};
+  }
+  const s = window.getSelection(); if(!s || !s.rangeCount || s.isCollapsed) return null;
+  const r = s.getRangeAt(0), nodo = r.commonAncestorContainer, el = nodo.nodeType===1 ? nodo : nodo.parentElement;
+  if(!el || !el.closest('main')) return null;
+  return {texto:s.toString(), lugar:lugarDe(nodo), rect:r.getBoundingClientRect(), rango:r.cloneRange()};
+}
+function quitarResaltadoMarcado(){
+  try{ if(window.CSS && CSS.highlights) CSS.highlights.delete('marcado'); }catch(e){}
+  $$('.marcado-campo').forEach(e => e.classList.remove('marcado-campo'));
+}
+function fijarMarcado(s){
+  quitarResaltadoMarcado();
+  marcado.texto = s.texto.trim().slice(0,4000); marcado.lugar = s.lugar;
+  try{ if(s.rango && window.Highlight && CSS.highlights) CSS.highlights.set('marcado', new Highlight(s.rango)); }catch(e){}
+  if(s.campo) s.campo.classList.add('marcado-campo');
+  const corto = marcado.texto.replace(/\s+/g,' ');
+  $('#o-marcado span').textContent = `📌 Marcaste en ${marcado.lugar}: «${corto.length > 140 ? corto.slice(0,137)+'…' : corto}»`;
+  $('#o-marcado').hidden = false;
+}
+function soltarMarcado(tambienResaltado){
+  marcado.texto = ''; marcado.lugar = ''; $('#o-marcado').hidden = true;
+  if(tambienResaltado) quitarResaltadoMarcado();
+}
+function revisarSeleccion(e){
+  if(e && e.target && e.target.closest && e.target.closest('#asistente, #sel-barra')) return;
+  setTimeout(() => {
+    const s = leerSeleccion();
+    if(!s || s.texto.trim().length < 2){ barra.hidden = true; selPendiente = null; return; }
+    selPendiente = s; barra.hidden = false;
+    const r = s.rect, ancho = barra.offsetWidth || 360, alto = barra.offsetHeight || 40;
+    let top = r.bottom + 8; if(top + alto > innerHeight - 8) top = Math.max(8, r.top - alto - 8);
+    barra.style.top = top + 'px';
+    barra.style.left = Math.min(Math.max(8, r.left), innerWidth - ancho - 8) + 'px';
+  }, 10);
+}
+document.addEventListener('mouseup', revisarSeleccion);
+document.addEventListener('keyup', e => { if(e.shiftKey || e.key==='Shift') revisarSeleccion(e); });
+document.addEventListener('mousedown', e => { if(!e.target.closest('#sel-barra')) barra.hidden = true; });
+window.addEventListener('scroll', () => { barra.hidden = true; }, true);
+const PEDIDOS_MARCADO = {
+  resolver:'Resolvé esto en la página y marcame las respuestas en la pantalla.',
+  explicar:'Explicame esto con palabras sencillas y un ejemplo.'
+};
+barra.addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b || !selPendiente) return;
+  fijarMarcado(selPendiente); selPendiente = null; barra.hidden = true;
+  window.getSelection().removeAllRanges();
+  abrirChat();
+  if(b.dataset.q==='preguntar'){ $('#o-msg').placeholder = 'Escribí qué querés saber sobre el texto marcado…'; setTimeout(() => $('#o-msg').focus(), 200); return; }
+  $('#o-msg').value = PEDIDOS_MARCADO[b.dataset.q];
+  enviarMensaje();
+});
+$('#o-marcado-x').onclick = () => soltarMarcado(true);
+
+async function enviarMensaje(){
+  let txt = $('#o-msg').value.trim();
+  if(marcado.texto){
+    txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
+    if(!chat.control){ soltarMarcado(false); $('#o-msg').placeholder = 'Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)'; }
+  }
+  if(!txt || chat.control) return;
+  $('#o-msg').value = '';
+  const inicio = chat.historial.length;
+  burbuja('yo', esc(txt));
+  chat.control = new AbortController();
+  $('#o-enviar').disabled = true; $('#o-parar').hidden = false;
+  let div = null;
+  try{
+    if(esClaude() && $('#o-agente').checked){ await agenteClaude(txt); return; }
+    let resultados = '';
+    const hechos = [];
+    if($('#o-acciones').checked){
+      const enun = leerEnunciado(txt);
+      if(enun.datos.length >= 3 && enun.esTabla){
+        $('#txt-enunciado').value = txt;
+        const ap = aplicarEnunciado(enun);
+        $('#enunciado-res').innerHTML = ap.html;
+        burbuja('accion', '✓ Leí el enunciado y armé la tabla de frecuencias' + ap.html);
+        resultados = ap.texto;
+        hechos.push('enunciado');
+      }
+      const nor = resultados ? null : leerNormal(txt);
+      if(nor && nor.respuestas.length){
+        const ap = aplicarNormal(nor);
+        burbuja('resultado', ap.html);
+        resultados = 'Resultados calculados por la página:\n' + ap.texto;
+      }
+      let acciones = [];
+      if(!resultados){
+        const aviso = burbuja('ia', '<p class="hint">Leyendo el ejercicio…</p>');
+        acciones = await extraerAcciones(txt);
+        aviso.remove();
+        if(!acciones.length && /\d/.test(txt)) burbuja('err', 'No pude pasar los datos de este mensaje a la página, así que no hay recuadro de resultados. El modelo va a responder solo con texto: no confíes en sus números. Probá pegar el enunciado en «Pegar enunciado» (paso 1) o resolverlo en la pestaña que corresponde.');
+      }
+      for(const {nombre, args} of acciones){
+        let res;
+        try{ res = ACCIONES[nombre](args); }catch(e){ res = 'Error: ' + e.message; }
+        burbuja('accion', esc(describirAccion(nombre, args)));
+        resultados += `\n[${NOMBRE_ACCION[nombre]}]\n${String(res).slice(0,2500)}\n`;
+        hechos.push((nombre==='elegir_opcion' || nombre==='ir_a_pestana') ? (ZONA_DE_PESTANA[chat.ultimaPestana] || nombre) : nombre);
+        chat.ultimaPestana = null;
+      }
+      const tarjeta = tarjetaResultados(hechos);
+      if(tarjeta) burbuja('resultado', tarjeta);
+    }
+    chat.historial.push({role:'user', content:txt});
+    if(resultados && !$('#o-explicar').checked){
+      const pestanas = [...new Set([...resultados.matchAll(/pestaña ([A-ZÁÉÍÓÚ][\wáéíóúñ ]+?)(?:[.:(\n]|$)/g)].map(m=>m[1].trim()))];
+      const msg = `Listo, ya llené los campos y la página calculó.${pestanas.length ? ' Revisalo en: ' + pestanas.join(', ') + '.' : ''}`;
+      burbuja('ia', mdBasico(msg));
+      chat.historial.push({role:'assistant', content:msg});
+      return;
+    }
+    div = burbuja('ia', '<p class="hint">Escribiendo…</p>');
+    const contenido = await explicar(div, resultados.trim());
+    if(!contenido.trim()) div.innerHTML = '<p class="hint">(el modelo no respondió nada)</p>';
+    else {
+      const permitidos = numerosDe(resultados + '\n' + txt + '\n' + (resultados ? '' : contextoActual()));
+      const {html, dudosos} = marcarDudosos(mdBasico(contenido), permitidos);
+      div.innerHTML = html + (dudosos ? `<p class="aviso">⚠ Marqué ${dudosos} número(s) que no coinciden con lo que calculó la página. Usá los del recuadro de resultados.</p>` : '');
+    }
+    chat.historial.push({role:'assistant', content:contenido});
+  }catch(e){
+    chat.historial.length = inicio;
+    if(e.name==='AbortError'){ if(div) div.insertAdjacentHTML('beforeend','<p class="hint">(detenido)</p>'); }
+    else { if(div) div.remove(); $$('#chat .msg.ia').forEach(d => { if(/Leyendo el ejercicio/.test(d.textContent)) d.remove(); }); burbuja('err', esc(e instanceof TypeError ? ayudaConexion() : e.message)); }
+  }finally{
+    chat.control = null; $('#o-enviar').disabled = false; $('#o-parar').hidden = true;
+    if(!esClaude()) refrescarEnMemoria();
+  }
+}
+$('#o-enviar').onclick = enviarMensaje;
+$('#o-msg').addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); enviarMensaje(); } });
+$('#o-parar').onclick = () => { if(chat.control) chat.control.abort(); };
+$('#o-limpiar').onclick = () => { if(chat.control) chat.control.abort(); chat.historial = []; soltarMarcado(true); $$('.senalado').forEach(e => e.classList.remove('senalado')); $('#chat').innerHTML = '<div class="vacio">Conversación nueva. Pedile lo que necesites.</div>'; };
+
+/* ---------- ENVIAR DESDE OTRAS PÁGINAS: favorito (bookmarklet) que abre esta herramienta con el texto marcado ---------- */
+const URL_HERRAMIENTA = location.origin + location.pathname;
+function codigoMarcador(){
+  const js = `(()=>{let t=String(getSelection()).trim();const a=document.activeElement;if(!t&&a&&typeof a.value==='string'&&a.selectionEnd>a.selectionStart)t=a.value.slice(a.selectionStart,a.selectionEnd).trim();if(!t)t=prompt('No marcaste ningún texto. Pegá aquí el ejercicio:');if(!t)return;window.open(${JSON.stringify(URL_HERRAMIENTA)}+'#enviar='+encodeURIComponent(t.slice(0,8000))+'&de='+encodeURIComponent((document.title||location.hostname).slice(0,100)),'herramienta_estadistica');})()`;
+  return 'javascript:' + js;
+}
+(function prepararMarcador(){
+  const a = $('#marcador'), aviso = $('#marcador-aviso');
+  if(!/^https?:$/.test(location.protocol)){
+    a.classList.add('apagado'); a.removeAttribute('href'); $('#marcador-copiar').disabled = true;
+    aviso.className = 'estado err';
+    aviso.textContent = 'Abriste la herramienta como archivo (doble clic). Los navegadores no dejan que otras páginas abran un archivo de tu computadora, así que el favorito no funcionaría. Abrí la herramienta desde GitHub Pages (o desde http://localhost:8000) y arrastrá el botón desde ahí.';
+    return;
+  }
+  a.href = codigoMarcador();
+  a.addEventListener('click', e => { e.preventDefault(); aviso.className = 'estado'; aviso.textContent = 'Este botón no se toca aquí: arrastralo a la barra de favoritos y usalo en otras páginas.'; });
+  $('#marcador-copiar').onclick = e => copiar(codigoMarcador(), e.target);
+})();
+function recibirDeOtraPagina(){
+  if(!location.hash.startsWith('#enviar=')) return;
+  const p = new URLSearchParams(location.hash.slice(1));
+  const texto = (p.get('enviar') || '').trim(), de = (p.get('de') || 'otra página').trim();
+  history.replaceState(null, '', location.pathname + location.search);
+  if(!texto) return;
+  $('[data-fuente="enunciado"]').click();
+  $('#txt-enunciado').value = texto;
+  $('#sec-datos').scrollIntoView({behavior:'smooth', block:'start'});
+  fijarMarcado({texto, lugar:`otra página («${de}»); quedó pegado en el cuadro «Enunciado del ejercicio»`, campo:$('#txt-enunciado')});
+  abrirChat();
+  if(chat.control){ $('#o-msg').value = PEDIDOS_MARCADO.resolver; return; }   /* si está respondiendo otra cosa, queda listo para enviar */
+  $('#o-msg').value = PEDIDOS_MARCADO.resolver;
+  setTimeout(enviarMensaje, 400);
+}
+window.addEventListener('hashchange', recibirDeOtraPagina);
+$('#ir-marcador').onclick = () => { irA('ajustes'); setTimeout(() => $('#enviar-desde').scrollIntoView({behavior:'smooth', block:'start'}), 150); };
+
+mostrarAjustes();
+calcNormal();
+conectarAsistente(false);
+recibirDeOtraPagina();
+</script>
+</body>
+</html>
