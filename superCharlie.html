@@ -132,6 +132,10 @@ tr.senalado td{background:rgba(232,163,61,.25)!important}
 .marcado-chip button{border:0;padding:0 6px;background:transparent}
 .boton-marcador{display:inline-block;padding:10px 16px;border-radius:999px;background:var(--acc);color:var(--acc-ink)!important;text-decoration:none;font-weight:600;cursor:grab}
 .boton-marcador.apagado{opacity:.45;cursor:not-allowed}
+.lista-resp{margin:4px 0 6px;padding-left:0;list-style:none}
+.lista-resp li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
+.lista-resp .lr-p{flex:1}
+.lista-resp .lr-v{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
 mark.dudoso{background:transparent;color:var(--warn);text-decoration:underline wavy var(--warn);font-weight:600}
 .respuestas{margin:4px 0 0;padding-left:0;list-style:none;font-size:14px}
 .respuestas li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
@@ -332,7 +336,8 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
   </div>
   <p id="r-res" class="estado"></p>
   <h3 id="enviar-desde">Enviar ejercicios desde otras páginas</h3>
-  <p class="hint">Arrastrá este botón a tu barra de favoritos (si no la ves: Ctrl + Shift + B). Después, en cualquier página, marcá el ejercicio con el mouse y tocá el favorito: se abre esta herramienta con el texto pegado y el asistente lo resuelve.</p>
+  <p class="hint">Arrastrá este botón a tu barra de favoritos (si no la ves: Ctrl + Shift + B). Después, en cualquier página, marcá el ejercicio con el mouse y tocá el favorito: se abre esta herramienta con el texto pegado y el asistente lo resuelve. Si en esa página hay casillas de respuesta cerca del ejercicio, las respuestas vuelven a esa página en un panel para que las revisés y las escribás.</p>
+  <p class="hint"><b>Si ya tenías el favorito de antes, borralo y arrastrá este de nuevo:</b> el viejo solo envía el texto y no recibe las respuestas.</p>
   <p><a id="marcador" class="boton-marcador" href="#">📤 Enviar a mi herramienta</a></p>
   <p id="marcador-aviso" class="estado"></p>
   <details><summary>Si no podés arrastrarlo</summary>
@@ -2037,6 +2042,11 @@ function herramientasAgente(){
     {name:'elegir', description:'Elegir una opción de una lista desplegable o marcar/desmarcar una casilla ("si" o "no").', input_schema:{type:'object', required:['control','opcion'], properties:{control:{type:'string', enum:ids(controlesPagina())}, opcion:{type:'string'}}}},
     {name:'tocar_boton', description:'Tocar un botón de la página (por ejemplo Analizar o Leer enunciado y resolver).', input_schema:{type:'object', required:['boton'], properties:{boton:{type:'string', enum:ids(botonesPagina())}}}},
     {name:'ir_a_pestana', description:'Abrir una pestaña de la página.', input_schema:{type:'object', required:['pestana'], properties:{pestana:{type:'string', enum:$$('#tabs button[data-tab]').map(b => b.dataset.tab)}}}},
+    {name:'entregar_respuestas', description:'Al terminar, entregá la lista final de respuestas: una fila por cada pregunta del ejercicio, con el número o texto exacto que calculó la página. Se muestra al estudiante como «Pregunta → respuesta»' + (chat.origen && chat.origen.campos.length ? ' y, si ponés campo, se manda a esa casilla de la página de origen.' : '.'),
+      input_schema:{type:'object', required:['respuestas'], properties:{resumen:{type:'string', description:'Una oración corta con lo que se resolvió.'}, respuestas:{type:'array', items:{type:'object', required:['pregunta','respuesta'], properties:Object.assign({
+        pregunta:{type:'string', description:'La pregunta, corta (ej. "Porcentaje por encima de 65").'},
+        respuesta:{type:'string', description:'La respuesta tal como la muestra la página (ej. "6,68"). Para listas u opción única: el valor exacto de una opción de la casilla.'}},
+        chat.origen && chat.origen.campos.length ? {campo:{type:'string', enum:chat.origen.campos.map(c => c.id), description:'Casilla de la página de origen donde va esta respuesta.'}} : {})}}}}},
     {name:'senalar_respuesta', description:'Resaltar en la pantalla dónde está una respuesta válida. texto = el número o texto EXACTO como aparece en la pestaña abierta (por ejemplo "90,88"); etiqueta = lo que lo acompaña (por ejemplo "Área por debajo de X"). Abrí antes la pestaña correcta.', input_schema:{type:'object', required:['texto'], properties:{texto:{type:'string'}, etiqueta:{type:'string', description:'Texto que acompaña a la respuesta en la página (ej. "Percentil 75" o "Área por debajo de X"), para no confundirla con otro número igual.'}}}}
   );
   return t;
@@ -2044,6 +2054,7 @@ function herramientasAgente(){
 function ejecutarHerramienta(nombre, a, hechos){
   if(nombre==='ver_pantalla') return verPantalla();
   if(nombre==='senalar_respuesta') return senalar(a.texto, a.etiqueta);
+  if(nombre==='entregar_respuestas') return entregarRespuestas(a);
   if(nombre==='ir_a_pestana'){ const r = ACCIONES.ir_a_pestana(a); hechos.push(ZONA_DE_PESTANA[a.pestana]); return r; }
   if(nombre==='elegir'){ chat.ultimaPestana = null; const r = ACCIONES.elegir_opcion(a); hechos.push(ZONA_DE_PESTANA[chat.ultimaPestana]); chat.ultimaPestana = null; return r + despuesDelPaso(); }
   if(nombre==='escribir'){
@@ -2071,6 +2082,36 @@ function describirPaso(nombre, a){
   if(nombre==='senalar_respuesta') return `👉 Te señalé en la página: ${a.texto}`;
   return describirAccion(nombre, a);
 }
+function entregarRespuestas(a){
+  const filas = (Array.isArray(a.respuestas) ? a.respuestas : []).filter(r => r && !vacio(r.respuesta));
+  if(!filas.length) throw new Error('No mandaste ninguna respuesta.');
+  let h = '<div class="rt-tit">📋 Respuestas</div><ol class="lista-resp">' + filas.map((r, k) =>
+    `<li><span class="lr-p">Pregunta ${k + 1}${r.pregunta ? ' · ' + esc(r.pregunta) : ''}</span><span class="lr-v">${esc(String(r.respuesta))}</span></li>`).join('') + '</ol>';
+  let msg = `Le mostré al estudiante ${filas.length} respuesta(s).`;
+  const conCampo = filas.filter(r => r.campo);
+  if(conCampo.length){
+    if(chat.origen && window.opener && !window.opener.closed){
+      try{
+        window.opener.postMessage({tipo:'sc-respuestas', token:chat.origen.token, resumen:a.resumen || '',
+          respuestas:filas.map(r => ({campo:r.campo || null, pregunta:r.pregunta || '', valor:String(r.respuesta)}))}, '*');
+        h += `<p class="hint">📨 Las mandé a «${esc(chat.origen.titulo)}». Revisalas en el panel de esa página y tocá «Escribir en las casillas».</p>`;
+        msg += ` Mandé ${conCampo.length} a las casillas de la página de origen; el estudiante las revisa y confirma allá.`;
+      }catch(e){ h += '<p class="aviso">No pude mandarlas a la página de origen. Copialas desde aquí.</p>'; msg += ' No se pudieron mandar a la página de origen.'; }
+    } else {
+      h += '<p class="aviso">La página de origen ya no está conectada (se cerró o no permite la conexión). Copialas desde aquí.</p>';
+      msg += ' La página de origen no está conectada.';
+    }
+  }
+  h += '<div class="botones"><button class="copiar-resp">Copiar respuestas</button></div>';
+  chat.respuestasPendientes = {h, filas};   /* se muestra al final, debajo del recuadro de resultados */
+  return msg;
+}
+function mostrarRespuestasPendientes(){
+  const rp = chat.respuestasPendientes; if(!rp) return;
+  chat.respuestasPendientes = null;
+  const div = burbuja('resultado', rp.h);
+  div.querySelector('.copiar-resp').onclick = e => copiar(rp.filas.map((r, k) => `Pregunta ${k + 1}${r.pregunta ? ' (' + r.pregunta + ')' : ''}: ${r.respuesta}`).join('\n'), e.target);
+}
 const REGLAS_AGENTE = `
 
 MODO AGENTE: podés ver y manejar toda la página con las herramientas.
@@ -2081,6 +2122,7 @@ MODO AGENTE: podés ver y manejar toda la página con las herramientas.
 - No toques «Volver a los valores del curso» ni cambies decimales, separador o valores perdidos si el estudiante no lo pide.
 - Si el mensaje trae «Texto que marqué en la página», eso es lo que el estudiante quiere que analices o resuelvas: trabajá sobre ese texto y señalá en la pantalla las respuestas que salgan de él.
 - Si el estudiante solo pregunta algo teórico, respondé sin tocar la página.
+- Cuando el ejercicio tenga preguntas para responder, antes de tu mensaje final usá entregar_respuestas con una fila por pregunta (en el orden del ejercicio) y los números exactos de la página.
 - Al terminar, escribí tu respuesta para el estudiante.`;
 async function agenteClaude(txt){
   $$('.senalado').forEach(e => e.classList.remove('senalado'));
@@ -2090,6 +2132,11 @@ async function agenteClaude(txt){
   const foto = verPantalla();
   const conv = mensajesClaude([...chat.historial.slice(-6), {role:'user', content:txt}]);
   conv[conv.length-1].content += `\n\n[Así está la página ahora]\n${foto}`;
+  if(chat.origen && chat.origen.campos.length){
+    conv[conv.length-1].content += `\n\n[Casillas de respuesta en la página de origen «${chat.origen.titulo}»]\n` + chat.origen.campos.map(c =>
+      `  · ${c.id} · tipo ${c.tipo} · «${c.etiqueta || ''}»${c.pregunta && c.pregunta!==c.etiqueta ? ` (pregunta: «${c.pregunta.slice(0,160)}»)` : ''}${c.opciones ? ' · opciones: ' + c.opciones.map(o => o.valor===o.texto ? o.valor : `${o.valor} = ${o.texto}`).join('; ') : ''}`).join('\n') +
+      `\nAl final, en entregar_respuestas poné en campo la casilla que corresponde a cada respuesta, en el formato que pide: número tal como lo da la página (coma decimal), en listas y opción única el valor exacto de una opción, en casillas "si" o "no". Si una casilla no tiene que ver con lo que se resolvió, no la uses.`;
+  }
   const hechos = []; let vistos = foto + '\n' + contextoActual(), final = '';
   const aviso = burbuja('paso', 'Mirando la página…');
   for(let paso = 1; paso <= 15; paso++){
@@ -2107,7 +2154,7 @@ async function agenteClaude(txt){
     for(const u of usos){
       let res, error = false;
       try{ res = String(ejecutarHerramienta(u.name, u.input || {}, hechos)); }catch(e){ res = 'Error: ' + e.message; error = true; }
-      if(u.name!=='ver_pantalla' && !(u.name==='senalar_respuesta' && !error && !res.startsWith('Señalé'))) burbuja(error ? 'err' : 'accion', esc(error ? res : describirPaso(u.name, u.input || {})));
+      if(u.name!=='ver_pantalla' && u.name!=='entregar_respuestas' && !(u.name==='senalar_respuesta' && !error && !res.startsWith('Señalé'))) burbuja(error ? 'err' : 'accion', esc(error ? res : describirPaso(u.name, u.input || {})));
       vistos += '\n' + res;
       devoluciones.push({type:'tool_result', tool_use_id:u.id, content:res.slice(0,8000), ...(error ? {is_error:true} : {})});
     }
@@ -2118,6 +2165,7 @@ async function agenteClaude(txt){
   if(!final) final = 'Hice varios pasos pero no llegué a una respuesta final. Revisá lo que quedó en la página y decime cómo seguimos.';
   const tarjeta = tarjetaResultados(hechos.filter(Boolean));
   if(tarjeta) burbuja('resultado', tarjeta);
+  mostrarRespuestasPendientes();
   const {html, dudosos} = marcarDudosos(mdBasico(final), numerosDe(vistos + '\n' + txt));
   burbuja('ia', html + (dudosos ? `<p class="aviso">⚠ Marqué ${dudosos} número(s) que no coinciden con lo que calculó la página. Usá los del recuadro de resultados.</p>` : ''));
   chat.historial.push({role:'user', content:txt}, {role:'assistant', content:final});
@@ -2304,13 +2352,127 @@ async function enviarMensaje(){
 $('#o-enviar').onclick = enviarMensaje;
 $('#o-msg').addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); enviarMensaje(); } });
 $('#o-parar').onclick = () => { if(chat.control) chat.control.abort(); };
-$('#o-limpiar').onclick = () => { if(chat.control) chat.control.abort(); chat.historial = []; soltarMarcado(true); $$('.senalado').forEach(e => e.classList.remove('senalado')); $('#chat').innerHTML = '<div class="vacio">Conversación nueva. Pedile lo que necesites.</div>'; };
+$('#o-limpiar').onclick = () => { if(chat.control) chat.control.abort(); chat.historial = []; chat.origen = null; soltarMarcado(true); $$('.senalado').forEach(e => e.classList.remove('senalado')); $('#chat').innerHTML = '<div class="vacio">Conversación nueva. Pedile lo que necesites.</div>'; };
 
 /* ---------- ENVIAR DESDE OTRAS PÁGINAS: favorito (bookmarklet) que abre esta herramienta con el texto marcado ---------- */
 const URL_HERRAMIENTA = location.origin + location.pathname;
+/* Este código corre DENTRO de la página de origen cuando tocás el favorito (por eso no usa nada de esta herramienta).
+   Busca el texto marcado y las casillas de respuesta cercanas, abre la herramienta y espera las respuestas. */
+function marcadorOrigen(URLH){
+  var sel = getSelection(), t = String(sel).trim(), act = document.activeElement;
+  if(!t && act && typeof act.value === 'string' && act.selectionEnd > act.selectionStart) t = act.value.slice(act.selectionStart, act.selectionEnd).trim();
+  if(!t) t = prompt('No marcaste ningún texto. Pegá aquí el ejercicio:');
+  if(!t) return;
+  var limpio = function(x){ return String(x || '').replace(/\s+/g, ' ').trim(); };
+  var visible = function(el){ var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  var SEL = 'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=file]):not([type=password]):not([type=image]):not([type=reset]):not([type=search]),textarea,select';
+  var base = sel.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
+  if(base && base.nodeType !== 1) base = base.parentElement;
+  var cont = base;
+  for(var i = 0; i < 10 && cont && cont !== document.body; i++){
+    if([].some.call(cont.querySelectorAll(SEL), visible)) break;
+    cont = cont.parentElement;
+  }
+  if(!cont) cont = document.body;
+  var etiqueta = function(el){
+    var l = '';
+    var textoLabel = function(lb){ var c = lb.cloneNode(true); [].forEach.call(c.querySelectorAll('select,option,input,textarea'), function(x){ x.remove(); }); return c.textContent; };
+    if(el.id){ try{ var lb = document.querySelector('label[for="' + CSS.escape(el.id) + '"]'); if(lb) l = textoLabel(lb); }catch(e){} }
+    if(!limpio(l) && el.closest('label')) l = textoLabel(el.closest('label'));
+    if(!l) l = el.getAttribute('aria-label') || el.getAttribute('placeholder') || el.title || '';
+    if(!l && el.previousElementSibling) l = el.previousElementSibling.innerText || '';
+    if(!l && el.parentElement) l = el.parentElement.innerText || '';
+    return limpio(l).slice(0, 140);
+  };
+  var preguntaDe = function(el){
+    var c = el.closest('fieldset,[role=radiogroup],[role=group],li,tr,.que,.question,.pregunta');
+    if(c){ var lg = c.querySelector('legend,[class*=qtext],[class*=pregunta],[class*=question]'); return limpio((lg || c).innerText).slice(0, 200); }
+    return '';
+  };
+  var campos = [], mapa = {}, grupos = {}, n = 0;
+  [].filter.call(cont.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){
+    var tipo = el.tagName === 'SELECT' ? 'lista' : el.tagName === 'TEXTAREA' ? 'texto' : (el.type || 'text');
+    if(tipo === 'radio'){
+      var g = el.name || ('sin-nombre-' + n);
+      if(!grupos[g]){ var id0 = 'c' + (++n); grupos[g] = {id:id0, tipo:'opcion_unica', etiqueta:preguntaDe(el), opciones:[]}; campos.push(grupos[g]); mapa[id0] = []; }
+      grupos[g].opciones.push({valor:el.value, texto:etiqueta(el)}); mapa[grupos[g].id].push(el); return;
+    }
+    var id = 'c' + (++n), d = {id:id, etiqueta:etiqueta(el), pregunta:preguntaDe(el)};
+    if(tipo === 'lista'){ d.tipo = 'lista'; d.opciones = [].map.call(el.options, function(o){ return {valor:o.value, texto:limpio(o.text)}; }).slice(0, 40); }
+    else if(tipo === 'checkbox') d.tipo = 'casilla';
+    else if(tipo === 'number') d.tipo = 'numero';
+    else d.tipo = 'texto';
+    campos.push(d); mapa[id] = [el];
+  });
+  var token = Math.random().toString(36).slice(2);
+  window.__scToken = token; window.__scMapa = mapa; window.__scCampos = campos;
+  var origenH = new URL(URLH).origin;
+  window.__scPanel = function(d){
+    var viejo = document.getElementById('sc-panel'); if(viejo) viejo.remove();
+    var p = document.createElement('div'); p.id = 'sc-panel';
+    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:380px;max-height:80vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #2c5a87;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
+    var h = '<div style="font-weight:700;font-size:15px;color:#2c5a87;margin-bottom:6px">📥 Respuestas de mi herramienta</div>';
+    if(d.resumen) h += '<div style="color:#5d6574;margin-bottom:8px">' + limpio(d.resumen).replace(/</g, '&lt;') + '</div>';
+    d.respuestas.forEach(function(r, k){
+      var c = campos.filter(function(x){ return x.id === r.campo; })[0];
+      var nombre = (r.pregunta || (c && (c.etiqueta || c.pregunta)) || ('Pregunta ' + (k + 1)));
+      var mostrar = String(r.valor);
+      if(c && c.opciones){ var op = c.opciones.filter(function(o){ return o.valor === mostrar; })[0]; if(op && op.texto) mostrar = op.texto; }
+      h += '<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid #e3e0d8;cursor:pointer"><input type="checkbox" data-k="' + k + '" ' + (c ? 'checked' : 'disabled') + ' style="margin-top:3px">' +
+        '<span style="flex:1"><span style="color:#5d6574">' + limpio(nombre).slice(0, 90).replace(/</g, '&lt;') + '</span><br><b>' + mostrar.replace(/</g, '&lt;') + '</b>' +
+        (c ? '' : ' <span style="color:#b4532a">(sin casilla)</span>') + ' <span data-e="' + k + '"></span></span></label>';
+    });
+    h += '<div style="display:flex;gap:8px;margin-top:10px"><button data-a="escribir" style="padding:7px 12px;border-radius:8px;border:0;background:#2c5a87;color:#fff;font:inherit;cursor:pointer">Escribir en las casillas</button><button data-a="cerrar" style="padding:7px 12px;border-radius:8px;border:1px solid #e3e0d8;background:#fff;color:#1c2230;font:inherit;cursor:pointer">Cerrar</button></div>';
+    p.innerHTML = h; document.body.appendChild(p);
+    var norm = function(x){ return limpio(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
+    var setValor = function(el, v){
+      var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+      Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v);
+      el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true}));
+    };
+    var escribir = function(r){
+      var els = window.__scMapa[r.campo]; if(!els || !els.length) return 'no encontré la casilla';
+      var el = els[0], v = String(r.valor), quiere = norm(v);
+      if(el.type === 'radio'){
+        var op = els.filter(function(x){ return norm(x.value) === quiere; })[0] || els.filter(function(x){ return norm(etiqueta(x)) === quiere; })[0] || els.filter(function(x){ return quiere && norm(etiqueta(x)).indexOf(quiere) >= 0; })[0];
+        if(!op) return 'esa opción no existe'; op.click(); el = op;
+      } else if(el.type === 'checkbox'){
+        var si = /^(si|true|1|marcar|marcada|verdadero|v)$/.test(quiere); if(el.checked !== si) el.click();
+      } else if(el.tagName === 'SELECT'){
+        var o = [].filter.call(el.options, function(x){ return norm(x.value) === quiere || norm(x.text) === quiere; })[0] || [].filter.call(el.options, function(x){ return quiere && norm(x.text).indexOf(quiere) >= 0; })[0];
+        if(!o) return 'esa opción no existe'; el.value = o.value; el.dispatchEvent(new Event('change', {bubbles:true}));
+      } else {
+        if(el.type === 'number') v = v.replace(/\s/g, '').replace(',', '.');
+        setValor(el, v);
+      }
+      el.style.outline = '3px solid #e8a33d'; el.style.outlineOffset = '2px';
+      return '';
+    };
+    p.addEventListener('click', function(e){
+      var b = e.target.closest('button'); if(!b) return;
+      if(b.dataset.a === 'cerrar'){ p.remove(); return; }
+      d.respuestas.forEach(function(r, k){
+        var ck = p.querySelector('input[data-k="' + k + '"]'), out = p.querySelector('[data-e="' + k + '"]');
+        if(!ck || !ck.checked) return;
+        var err = escribir(r); out.textContent = err ? '⚠ ' + err : '✓'; out.style.color = err ? '#b4532a' : '#2f7d4f';
+      });
+      b.textContent = 'Listo ✓';
+    });
+  };
+  if(!window.__scEscuchando){
+    window.__scEscuchando = true;
+    addEventListener('message', function(e){
+      var d = e.data;
+      if(!d || d.tipo !== 'sc-respuestas' || d.token !== window.__scToken || e.origin !== window.__scOrigenH) return;
+      window.__scPanel(d);
+    });
+  }
+  window.__scOrigenH = origenH;
+  var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 12));
+  window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), '_blank');
+}
 function codigoMarcador(){
-  const js = `(()=>{let t=String(getSelection()).trim();const a=document.activeElement;if(!t&&a&&typeof a.value==='string'&&a.selectionEnd>a.selectionStart)t=a.value.slice(a.selectionStart,a.selectionEnd).trim();if(!t)t=prompt('No marcaste ningún texto. Pegá aquí el ejercicio:');if(!t)return;window.open(${JSON.stringify(URL_HERRAMIENTA)}+'#enviar='+encodeURIComponent(t.slice(0,8000))+'&de='+encodeURIComponent((document.title||location.hostname).slice(0,100)),'herramienta_estadistica');})()`;
-  return 'javascript:' + js;
+  return 'javascript:' + encodeURIComponent('(' + marcadorOrigen.toString().replace(/^\s+/gm, '') + ')(' + JSON.stringify(URL_HERRAMIENTA) + ');void 0');
 }
 (function prepararMarcador(){
   const a = $('#marcador'), aviso = $('#marcador-aviso');
@@ -2328,8 +2490,14 @@ function recibirDeOtraPagina(){
   if(!location.hash.startsWith('#enviar=')) return;
   const p = new URLSearchParams(location.hash.slice(1));
   const texto = (p.get('enviar') || '').trim(), de = (p.get('de') || 'otra página').trim();
+  let campos = []; try{ campos = JSON.parse(p.get('campos') || '[]'); }catch(e){}
   history.replaceState(null, '', location.pathname + location.search);
   if(!texto) return;
+  chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de} : null;
+  if(chat.origen){
+    abrirChat();
+    burbuja('paso', esc(`🔗 Conectado con «${de}»` + (chat.origen.campos.length ? `: encontré ${chat.origen.campos.length} casilla(s) de respuesta. Las respuestas te van a aparecer en esa página para que las revisés y las escribás.` : '. No encontré casillas de respuesta cerca del texto marcado; las respuestas quedan aquí.')));
+  }
   $('[data-fuente="enunciado"]').click();
   $('#txt-enunciado').value = texto;
   $('#sec-datos').scrollIntoView({behavior:'smooth', block:'start'});
