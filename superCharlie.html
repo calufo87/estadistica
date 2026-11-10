@@ -142,6 +142,8 @@ tr.senalado td{background:rgba(232,163,61,.25)!important}
 .fila-arch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0 4px 26px}
 .fila-arch button{font-size:12.5px;padding:4px 9px}
 .lista-resp li{cursor:copy}
+.lr-pasar{font-size:12.5px;padding:3px 9px;white-space:nowrap}
+.lr-pasar.pasada{border-color:var(--ok);color:var(--ok)}
 mark.dudoso{background:transparent;color:var(--warn);text-decoration:underline wavy var(--warn);font-weight:600}
 .respuestas{margin:4px 0 0;padding-left:0;list-style:none;font-size:14px}
 .respuestas li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
@@ -400,10 +402,11 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.2';
+const VERSION = '5.3';
 const VERSION_FECHA = '9 nov 2026';
-const VERSION_FAVORITO = 3;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 4;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.3 · Reconoce el número de ítem y busca su casilla en la hoja de respuestas; se pasan solo las respuestas que elegís (sin «Pasar todas»), también desde la herramienta',
   '5.2 · Con Claude no explica por defecto; pasar respuestas de a una o eligiendo la casilla; respuestas agregadas a un archivo .txt',
   '5.1 · Si Claude se olvida de devolver las respuestas a la página de origen, la herramienta se lo recuerda',
   '5.0 · Respuestas «Pregunta → respuesta» y devolución a las casillas de la página de origen; número de versión',
@@ -2105,11 +2108,16 @@ function describirPaso(nombre, a){
   if(nombre==='senalar_respuesta') return `👉 Te señalé en la página: ${a.texto}`;
   return describirAccion(nombre, a);
 }
+function itemDelTexto(t){
+  const m = String(t || '').match(/^\s*(\d{1,3})\s*[.)\-–:]\s/) || String(t || '').match(/(?:ejercicio|pregunta|[íi]tem|problema|reactivo)\s*#?\s*(\d{1,3})/i);
+  return m ? m[1] : '';
+}
 function entregarRespuestas(a){
   const filas = (Array.isArray(a.respuestas) ? a.respuestas : []).filter(r => r && !vacio(r.respuesta));
   if(!filas.length) throw new Error('No mandaste ninguna respuesta.');
-  let h = '<div class="rt-tit">📋 Respuestas</div><ol class="lista-resp">' + filas.map((r, k) =>
-    `<li><span class="lr-p">Pregunta ${k + 1}${r.pregunta ? ' · ' + esc(r.pregunta) : ''}</span><span class="lr-v">${esc(String(r.respuesta))}</span></li>`).join('') + '</ol>';
+  const conectado = !!(chat.origen && window.opener && !window.opener.closed);
+  let h = `<div class="rt-tit">📋 Respuestas${chat.item ? ' · Ítem ' + esc(chat.item) : ''}</div><ol class="lista-resp">` + filas.map((r, k) =>
+    `<li><span class="lr-p">Pregunta ${k + 1}${r.pregunta ? ' · ' + esc(r.pregunta) : ''}</span><span class="lr-v">${esc(String(r.respuesta))}</span>${r.campo && conectado ? `<button class="lr-pasar" data-k="${k}">Pasar ➜</button>` : ''}</li>`).join('') + '</ol>';
   let msg = `Le mostré al estudiante ${filas.length} respuesta(s).`;
   const conCampo = filas.filter(r => r.campo);
   if(conCampo.length){
@@ -2117,7 +2125,7 @@ function entregarRespuestas(a){
       try{
         window.opener.postMessage({tipo:'sc-respuestas', token:chat.origen.token, resumen:a.resumen || '',
           respuestas:filas.map(r => ({campo:r.campo || null, pregunta:r.pregunta || '', valor:String(r.respuesta)}))}, '*');
-        h += `<p class="hint">📨 Las mandé a «${esc(chat.origen.titulo)}». En esa pestaña tocá «Pasar» en cada una que quieras agregar, o «Pasar todas».</p>`;
+        h += `<p class="hint">📨 También te las dejé en un panel en «${esc(chat.origen.titulo)}». Pasá solo las que quieras: con «Pasar ➜» aquí o con «Pasar» en esa pestaña.</p>`;
         msg += ` Mandé ${conCampo.length} a las casillas de la página de origen; el estudiante las revisa y confirma allá.`;
       }catch(e){ h += '<p class="aviso">No pude mandarlas a la página de origen. Copialas desde aquí.</p>'; msg += ' No se pudieron mandar a la página de origen.'; }
     } else {
@@ -2126,18 +2134,32 @@ function entregarRespuestas(a){
     }
   }
   h += '<div class="botones"><button class="copiar-resp">Copiar respuestas</button></div><p class="hint estado-archivo"></p>';
-  const registro = {fecha:new Date().toISOString(), origen:chat.origen ? chat.origen.titulo : '', ejercicio:chat.ultimoEjercicio || '', resumen:a.resumen || '',
+  const registro = {fecha:new Date().toISOString(), item:chat.item || '', origen:chat.origen ? chat.origen.titulo : '', ejercicio:chat.ultimoEjercicio || '', resumen:a.resumen || '',
     respuestas:filas.map(r => ({pregunta:r.pregunta || '', respuesta:String(r.respuesta)}))};
   guardarEnHistorial(registro);
   chat.respuestasPendientes = {h, filas, registro};   /* se muestra al final, debajo del recuadro de resultados */
   return msg;
 }
+const botonesPasar = {};
+window.addEventListener('message', e => {
+  const d = e.data; if(!d || d.tipo !== 'sc-pasada' || e.source !== window.opener) return;
+  const b = botonesPasar[d.k]; if(!b) return;
+  b.disabled = false; b.textContent = d.err ? '⚠ ' + d.err : '✓ Pasada'; b.classList.toggle('pasada', !d.err);
+});
 function mostrarRespuestasPendientes(){
   const rp = chat.respuestasPendientes; if(!rp) return;
   chat.respuestasPendientes = null;
   const div = burbuja('resultado', rp.h);
   div.querySelector('.copiar-resp').onclick = e => copiar(rp.filas.map((r, k) => `Pregunta ${k + 1}${r.pregunta ? ' (' + r.pregunta + ')' : ''}: ${r.respuesta}`).join('\n'), e.target);
-  div.querySelectorAll('.lista-resp li').forEach((li, k) => { li.title = 'Clic para copiar esta respuesta'; li.onclick = () => copiar(String(rp.filas[k].respuesta), li.querySelector('.lr-v')); });
+  div.querySelectorAll('.lista-resp li').forEach((li, k) => { li.title = 'Clic para copiar esta respuesta'; li.onclick = e => { if(e.target.closest('button')) return; copiar(String(rp.filas[k].respuesta), li.querySelector('.lr-v')); }; });
+  div.querySelectorAll('.lr-pasar').forEach(b => b.onclick = () => {
+    const k = Number(b.dataset.k), r = rp.filas[k];
+    if(!chat.origen || !window.opener || window.opener.closed){ b.textContent = '⚠ sin conexión'; return; }
+    b.disabled = true; b.textContent = 'Pasando…';
+    botonesPasar[k] = b;
+    window.opener.postMessage({tipo:'sc-pasar', token:chat.origen.token, k, respuesta:{campo:r.campo, valor:String(r.respuesta)}}, '*');
+    setTimeout(() => { if(b.textContent === 'Pasando…'){ b.disabled = false; b.textContent = '⚠ no respondió · reintentar'; } }, 3000);
+  });
   agregarAlArchivo(rp.registro, div.querySelector('.estado-archivo'));
 }
 /* ---------- RESPUESTAS EN ARCHIVO DE TEXTO: se van agregando al final de un mismo .txt ---------- */
@@ -2148,6 +2170,7 @@ function textoRegistro(r){
   const f = new Date(r.fecha), dd = n => String(n).padStart(2, '0');
   const fecha = `${dd(f.getDate())}/${dd(f.getMonth() + 1)}/${f.getFullYear()} ${dd(f.getHours())}:${dd(f.getMinutes())}`;
   const L = ['==================================================', `Fecha: ${fecha}`];
+  if(r.item) L.push(`Ítem: ${r.item}`);
   if(r.origen) L.push(`Origen: ${r.origen}`);
   if(r.ejercicio) L.push('Ejercicio:', ...String(r.ejercicio).trim().split(/\r?\n/).map(x => '  ' + x));
   if(r.resumen) L.push(`Resumen: ${r.resumen}`);
@@ -2231,8 +2254,8 @@ async function agenteClaude(txt){
   const conv = mensajesClaude([...chat.historial.slice(-6), {role:'user', content:txt}]);
   conv[conv.length-1].content += `\n\n[Así está la página ahora]\n${foto}`;
   if(chat.origen && chat.origen.campos.length){
-    conv[conv.length-1].content += `\n\n[Casillas de respuesta en la página de origen «${chat.origen.titulo}»]\n` + chat.origen.campos.map(c =>
-      `  · ${c.id} · tipo ${c.tipo} · «${c.etiqueta || ''}»${c.pregunta && c.pregunta!==c.etiqueta ? ` (pregunta: «${c.pregunta.slice(0,160)}»)` : ''}${c.opciones ? ' · opciones: ' + c.opciones.map(o => o.valor===o.texto ? o.valor : `${o.valor} = ${o.texto}`).join('; ') : ''}`).join('\n') +
+    conv[conv.length-1].content += `\n\n[Casillas de respuesta en la página de origen «${chat.origen.titulo}»${chat.item ? ` — el estudiante está resolviendo el ítem ${chat.item}; las casillas marcadas [hoja de respuestas del ítem ${chat.item}] son donde van sus respuestas` : ''}]\n` + chat.origen.campos.map(c =>
+      `  · ${c.id}${c.hoja ? ` [hoja de respuestas del ítem ${chat.item}]` : ''} · tipo ${c.tipo} · «${c.etiqueta || ''}»${c.pregunta && c.pregunta!==c.etiqueta ? ` (pregunta: «${c.pregunta.slice(0,160)}»)` : ''}${c.opciones ? ' · opciones: ' + c.opciones.map(o => o.valor===o.texto ? o.valor : `${o.valor} = ${o.texto}`).join('; ') : ''}`).join('\n') +
       `\nAl final, en entregar_respuestas poné en campo la casilla que corresponde a cada respuesta, en el formato que pide: número tal como lo da la página (coma decimal), en listas y opción única el valor exacto de una opción, en casillas "si" o "no". Si una casilla no tiene que ver con lo que se resolvió, no la uses.`;
   }
   const hechos = []; let vistos = foto + '\n' + contextoActual(), final = '';
@@ -2384,7 +2407,7 @@ $('#o-marcado-x').onclick = () => soltarMarcado(true);
 
 async function enviarMensaje(){
   let txt = $('#o-msg').value.trim();
-  if(!chat.control) chat.ultimoEjercicio = marcado.texto || txt;
+  if(!chat.control){ chat.ultimoEjercicio = marcado.texto || txt; if(!chat.origen) chat.item = itemDelTexto(marcado.texto || txt); }
   if(marcado.texto){
     txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
     if(!chat.control){ soltarMarcado(false); $('#o-msg').placeholder = 'Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)'; }
@@ -2475,16 +2498,29 @@ function marcadorOrigen(URLH, FV){
   if(!t) t = prompt('No marcaste ningún texto. Pegá aquí el ejercicio:');
   if(!t) return;
   var limpio = function(x){ return String(x || '').replace(/\s+/g, ' ').trim(); };
+  var norm = function(x){ return limpio(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
   var visible = function(el){ var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
   var SEL = 'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=file]):not([type=password]):not([type=image]):not([type=reset]):not([type=search]),textarea,select';
   var base = sel.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
   if(base && base.nodeType !== 1) base = base.parentElement;
-  var cont = base;
-  for(var i = 0; i < 10 && cont && cont !== document.body; i++){
-    if([].some.call(cont.querySelectorAll(SEL), visible)) break;
-    cont = cont.parentElement;
-  }
-  if(!cont) cont = document.body;
+  if(!base && act && act !== document.body) base = act;
+  /* ---- número de ítem del ejercicio marcado ---- */
+  var RX = /(?:ejercicio|pregunta|[íi]tem|problema|reactivo|n[º°o]\.?)\s*#?\s*(\d{1,3})/i;
+  var detectarItem = function(){
+    var m = t.match(/^\s*(\d{1,3})\s*[.)\-–:]\s/) || t.match(RX); if(m) return m[1];
+    var el = base;
+    for(var i = 0; i < 7 && el && el !== document.documentElement; i++){
+      if(el.tagName === 'LI' && el.parentElement && el.parentElement.tagName === 'OL') return String([].indexOf.call(el.parentElement.children, el) + 1);
+      var cands = [].filter.call(el.querySelectorAll('h1,h2,h3,h4,h5,h6,legend,strong,b,.num,[class*=num],[class*=qno],[class*=titulo],[class*=title],[class*=cab]'), function(c){
+        if(!(RX.test(limpio(c.innerText)) || /^\d{1,3}\s*[.)]?$/.test(limpio(c.innerText)))) return false;
+        return c.contains(base) || !!(c.compareDocumentPosition(base) & Node.DOCUMENT_POSITION_FOLLOWING);
+      });
+      if(cands.length){ var u = limpio(cands[cands.length - 1].innerText); var mm = u.match(RX) || u.match(/^(\d{1,3})/); if(mm) return mm[1]; }
+      el = el.parentElement;
+    }
+    return '';
+  };
+  var item = detectarItem();
   var etiqueta = function(el){
     var l = '';
     var textoLabel = function(lb){ var c = lb.cloneNode(true); [].forEach.call(c.querySelectorAll('select,option,input,textarea'), function(x){ x.remove(); }); return c.textContent; };
@@ -2500,74 +2536,97 @@ function marcadorOrigen(URLH, FV){
     if(c){ var lg = c.querySelector('legend,[class*=qtext],[class*=pregunta],[class*=question]'); return limpio((lg || c).innerText).slice(0, 200); }
     return '';
   };
-  var campos = [], mapa = {}, grupos = {}, n = 0;
-  [].filter.call(cont.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){
+  /* ---- casillas: las cercanas al texto marcado y, si hay número de ítem, las de ese ítem en la hoja de respuestas ---- */
+  var campos = [], mapa = {}, grupos = {}, vistos = [], n = 0;
+  var agregar = function(el, hoja){
+    if(vistos.indexOf(el) >= 0 || campos.length >= 50) return; vistos.push(el);
     var tipo = el.tagName === 'SELECT' ? 'lista' : el.tagName === 'TEXTAREA' ? 'texto' : (el.type || 'text');
     if(tipo === 'radio'){
       var g = el.name || ('sin-nombre-' + n);
-      if(!grupos[g]){ var id0 = 'c' + (++n); grupos[g] = {id:id0, tipo:'opcion_unica', etiqueta:preguntaDe(el), opciones:[]}; campos.push(grupos[g]); mapa[id0] = []; }
+      if(!grupos[g]){ var id0 = 'c' + (++n); grupos[g] = {id:id0, tipo:'opcion_unica', etiqueta:preguntaDe(el), opciones:[]}; if(hoja) grupos[g].hoja = true; campos.push(grupos[g]); mapa[id0] = []; }
       grupos[g].opciones.push({valor:el.value, texto:etiqueta(el)}); mapa[grupos[g].id].push(el); return;
     }
     var id = 'c' + (++n), d = {id:id, etiqueta:etiqueta(el), pregunta:preguntaDe(el)};
+    if(hoja) d.hoja = true;
     if(tipo === 'lista'){ d.tipo = 'lista'; d.opciones = [].map.call(el.options, function(o){ return {valor:o.value, texto:limpio(o.text)}; }).slice(0, 40); }
     else if(tipo === 'checkbox') d.tipo = 'casilla';
     else if(tipo === 'number') d.tipo = 'numero';
     else d.tipo = 'texto';
     campos.push(d); mapa[id] = [el];
-  });
+  };
+  var cont = base;
+  for(var i = 0; i < 10 && cont && cont !== document.body; i++){
+    if([].some.call(cont.querySelectorAll(SEL), visible)) break;
+    cont = cont.parentElement;
+  }
+  if(!cont) cont = document.body;
+  if(item){
+    var rxItem = new RegExp('(^|\\D)' + item + '(\\D|$)');
+    [].filter.call(document.querySelectorAll(SEL), visible).slice(0, 400).forEach(function(el){
+      var et = etiqueta(el), nm = (el.name || '') + ' ' + (el.id || '');
+      if((et.length <= 40 && rxItem.test(et)) || rxItem.test(nm)) agregar(el, true);
+    });
+  }
+  [].filter.call(cont.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){ agregar(el, false); });
+  /* ---- escribir una respuesta en una casilla según su tipo ---- */
+  var setValor = function(el, v){
+    var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
+    Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v);
+    el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true}));
+  };
+  var escribirEn = function(els, valor){
+    if(!els || !els.length) return 'no encontré la casilla';
+    var el = els[0], v = String(valor), quiere = norm(v);
+    if(el.type === 'radio'){
+      var op = els.filter(function(x){ return norm(x.value) === quiere; })[0] || els.filter(function(x){ return norm(etiqueta(x)) === quiere; })[0] || els.filter(function(x){ return quiere && norm(etiqueta(x)).indexOf(quiere) >= 0; })[0];
+      if(!op) return 'esa opción no existe en esa casilla'; op.click(); el = op;
+    } else if(el.type === 'checkbox'){
+      var si = /^(si|true|1|marcar|marcada|verdadero|v)$/.test(quiere); if(el.checked !== si) el.click();
+    } else if(el.tagName === 'SELECT'){
+      var o = [].filter.call(el.options, function(x){ return norm(x.value) === quiere || norm(x.text) === quiere; })[0] || [].filter.call(el.options, function(x){ return quiere && norm(x.text).indexOf(quiere) >= 0; })[0];
+      if(!o) return 'esa opción no existe en esa lista'; el.value = o.value; el.dispatchEvent(new Event('change', {bubbles:true}));
+    } else {
+      if(el.type === 'number') v = v.replace(/\s/g, '').replace(',', '.');
+      setValor(el, v);
+    }
+    el.style.outline = '3px solid #e8a33d'; el.style.outlineOffset = '2px';
+    try{ el.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
+    return '';
+  };
   var token = Math.random().toString(36).slice(2);
-  window.__scToken = token; window.__scMapa = mapa; window.__scCampos = campos;
+  window.__scToken = token; window.__scMapa = mapa; window.__scCampos = campos; window.__scItem = item;
+  window.__scEscribir = function(r){ return escribirEn(window.__scMapa[r.campo], r.valor); };
   var origenH = new URL(URLH).origin;
+  /* ---- panel con las respuestas: cada una se pasa sola, con su botón ---- */
   window.__scPanel = function(d){
     var viejo = document.getElementById('sc-panel'); if(viejo && viejo.__cerrar) viejo.__cerrar(); else if(viejo) viejo.remove();
     var p = document.createElement('div'); p.id = 'sc-panel';
     p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:390px;max-height:85vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #2c5a87;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
     var esc2 = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
     var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#2c5a87;color:#fff' : 'border:1px solid #cfcac0;background:#fff;color:#1c2230') + '">' + txt + '</button>'; };
-    var h = '<div style="font-weight:700;font-size:15px;color:#2c5a87;margin-bottom:4px">📥 Respuestas de mi herramienta</div>';
+    var h = '<div style="font-weight:700;font-size:15px;color:#2c5a87;margin-bottom:4px">📥 Respuestas' + (window.__scItem ? ' · Ítem ' + esc2(window.__scItem) : '') + '</div>';
     if(d.resumen) h += '<div style="color:#5d6574;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
-    h += '<div style="color:#5d6574;font-size:12.5px;margin-bottom:6px">Tocá <b>Pasar</b> en cada respuesta que quieras agregar, o <b>Elegir casilla…</b> y después hacé clic en la casilla donde va.</div>';
-    var hayCampo = false;
+    h += '<div style="color:#5d6574;font-size:12.5px;margin-bottom:6px">Pasá solo las que querés: tocá <b>Pasar</b> en cada una, o <b>Elegir casilla…</b> y después hacé clic en la casilla donde va.</div>';
     d.respuestas.forEach(function(r, k){
-      var c = campos.filter(function(x){ return x.id === r.campo; })[0]; if(c) hayCampo = true;
+      var c = campos.filter(function(x){ return x.id === r.campo; })[0];
       var nombre = (r.pregunta || (c && (c.etiqueta || c.pregunta)) || ('Pregunta ' + (k + 1)));
       var mostrar = String(r.valor);
       if(c && c.opciones){ var op = c.opciones.filter(function(o){ return o.valor === mostrar; })[0]; if(op && op.texto) mostrar = op.texto; }
-      h += '<div style="padding:7px 0;border-top:1px solid #e3e0d8"><span style="color:#5d6574">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span><br><b style="font-size:15px">' + esc2(mostrar) + '</b> <span data-e="' + k + '" style="font-weight:600"></span>' +
+      h += '<div style="padding:7px 0;border-top:1px solid #e3e0d8"><span style="color:#5d6574">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span>' +
+        (c && c.hoja ? ' <span style="font-size:11px;color:#2c5a87;border:1px solid #2c5a87;border-radius:999px;padding:0 6px">hoja de respuestas</span>' : '') +
+        '<br><b style="font-size:15px">' + esc2(mostrar) + '</b> <span data-e="' + k + '" style="font-weight:600"></span>' +
         '<div style="display:flex;gap:6px;margin-top:5px">' + (c ? btn('pasar', k, 'Pasar', true) : '<span style="color:#b4532a;font-size:12.5px;align-self:center">sin casilla detectada</span>') + btn('elegir', k, 'Elegir casilla…') + '</div></div>';
     });
     h += '<div data-aviso style="display:none;margin-top:8px;padding:7px 9px;border-radius:8px;background:#fff4e0;color:#8a5a00;font-size:13px"></div>';
-    h += '<div style="display:flex;gap:8px;margin-top:10px">' + (hayCampo ? btn('todas', '', 'Pasar todas', true) : '') + btn('cerrar', '', 'Cerrar') + '</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:10px">' + btn('cerrar', '', 'Cerrar') + '</div>';
     p.innerHTML = h; document.body.appendChild(p);
     var aviso = p.querySelector('[data-aviso]');
-    var norm = function(x){ return limpio(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
-    var setValor = function(el, v){
-      var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-      Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v);
-      el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true}));
-    };
-    var escribirEn = function(els, valor){
-      if(!els || !els.length) return 'no encontré la casilla';
-      var el = els[0], v = String(valor), quiere = norm(v);
-      if(el.type === 'radio'){
-        var op = els.filter(function(x){ return norm(x.value) === quiere; })[0] || els.filter(function(x){ return norm(etiqueta(x)) === quiere; })[0] || els.filter(function(x){ return quiere && norm(etiqueta(x)).indexOf(quiere) >= 0; })[0];
-        if(!op) return 'esa opción no existe en esa casilla'; op.click(); el = op;
-      } else if(el.type === 'checkbox'){
-        var si = /^(si|true|1|marcar|marcada|verdadero|v)$/.test(quiere); if(el.checked !== si) el.click();
-      } else if(el.tagName === 'SELECT'){
-        var o = [].filter.call(el.options, function(x){ return norm(x.value) === quiere || norm(x.text) === quiere; })[0] || [].filter.call(el.options, function(x){ return quiere && norm(x.text).indexOf(quiere) >= 0; })[0];
-        if(!o) return 'esa opción no existe en esa lista'; el.value = o.value; el.dispatchEvent(new Event('change', {bubbles:true}));
-      } else {
-        if(el.type === 'number') v = v.replace(/\s/g, '').replace(',', '.');
-        setValor(el, v);
-      }
-      el.style.outline = '3px solid #e8a33d'; el.style.outlineOffset = '2px';
-      return '';
-    };
     var marcar = function(k, err){
-      var out = p.querySelector('[data-e="' + k + '"]'); out.textContent = err ? '⚠ ' + err : '✓ pasada'; out.style.color = err ? '#b4532a' : '#2f7d4f';
+      var out = p.querySelector('[data-e="' + k + '"]'); if(!out) return;
+      out.textContent = err ? '⚠ ' + err : '✓ pasada'; out.style.color = err ? '#b4532a' : '#2f7d4f';
       var b = p.querySelector('button[data-a="pasar"][data-k="' + k + '"]'); if(b && !err){ b.textContent = '✓ Pasada'; b.style.background = '#2f7d4f'; }
     };
+    window.__scMarcar = marcar;
     var esperando = null, tragarClick = false;
     var alElegir = function(e){
       if(esperando === null) return;
@@ -2584,27 +2643,31 @@ function marcadorOrigen(URLH, FV){
     document.addEventListener('mousedown', alElegir, true);
     document.addEventListener('click', alClick, true);
     document.addEventListener('keydown', alTecla, true);
-    p.__cerrar = function(){ document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); p.remove(); };
+    p.__cerrar = function(){ document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); window.__scMarcar = null; p.remove(); };
     p.addEventListener('click', function(e){
       var b = e.target.closest('button'); if(!b) return;
       var a = b.dataset.a, k = b.dataset.k === '' ? null : Number(b.dataset.k);
       if(a === 'cerrar'){ p.__cerrar(); return; }
-      if(a === 'pasar'){ var r = d.respuestas[k]; marcar(k, escribirEn(window.__scMapa[r.campo], r.valor)); return; }
+      if(a === 'pasar'){ marcar(k, window.__scEscribir(d.respuestas[k])); return; }
       if(a === 'elegir'){ esperando = k; aviso.style.display = 'block'; aviso.textContent = 'Ahora hacé clic en la casilla donde va «' + String(d.respuestas[k].valor) + '». (Esc para cancelar)'; return; }
-      if(a === 'todas'){ d.respuestas.forEach(function(r, j){ if(r.campo && window.__scMapa[r.campo]) marcar(j, escribirEn(window.__scMapa[r.campo], r.valor)); }); b.textContent = 'Listo ✓'; }
     });
   };
   if(!window.__scEscuchando){
     window.__scEscuchando = true;
     addEventListener('message', function(e){
       var d = e.data;
-      if(!d || d.tipo !== 'sc-respuestas' || d.token !== window.__scToken || e.origin !== window.__scOrigenH) return;
-      window.__scPanel(d);
+      if(!d || d.token !== window.__scToken || e.origin !== window.__scOrigenH) return;
+      if(d.tipo === 'sc-respuestas') window.__scPanel(d);
+      if(d.tipo === 'sc-pasar'){
+        var err = window.__scEscribir(d.respuesta);
+        if(window.__scMarcar && d.k !== undefined) window.__scMarcar(d.k, err);
+        try{ e.source.postMessage({tipo:'sc-pasada', k:d.k, err:err}, e.origin); }catch(x){}
+      }
     });
   }
   window.__scOrigenH = origenH;
-  var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 12));
-  window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), '_blank');
+  var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 15));
+  window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&item=' + encodeURIComponent(item) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), '_blank');
 }
 function codigoMarcador(){
   return 'javascript:' + encodeURIComponent('(' + marcadorOrigen.toString().replace(/^\s+/gm, '') + ')(' + JSON.stringify(URL_HERRAMIENTA) + ',' + VERSION_FAVORITO + ');void 0');
@@ -2630,14 +2693,16 @@ function recibirDeOtraPagina(){
   const favViejo = (Number(p.get('fv')) || 1) < VERSION_FAVORITO;
   history.replaceState(null, '', location.pathname + location.search);
   if(!texto) return;
-  chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de} : null;
+  const item = (p.get('item') || '').trim();
+  chat.item = item || itemDelTexto(texto);
+  chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de, item:chat.item} : null;
   if(favViejo){
     abrirChat();
     burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior${(Number(p.get('fv')) || 1) < 2 ? ': manda el texto, pero no recibe las respuestas de vuelta' : ': le faltan las mejoras nuevas del panel de respuestas'}. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes → «Enviar ejercicios desde otras páginas» (versión ${VERSION}).`));
   }
   if(chat.origen){
     abrirChat();
-    burbuja('paso', esc(`🔗 Conectado con «${de}»` + (chat.origen.campos.length ? `: encontré ${chat.origen.campos.length} casilla(s) de respuesta. Las respuestas te van a aparecer en esa página para que las revisés y las escribás.` : '. No encontré casillas de respuesta cerca del texto marcado; las respuestas quedan aquí.')));
+    burbuja('paso', esc(`🔗 Conectado con «${de}»${chat.item ? ` · Ítem ${chat.item}` : ''}` + (chat.origen.campos.length ? `: encontré ${chat.origen.campos.length} casilla(s) de respuesta. Las respuestas te van a aparecer en esa página para que las revisés y las escribás.` : '. No encontré casillas de respuesta cerca del texto marcado; las respuestas quedan aquí.')));
   }
   $('[data-fuente="enunciado"]').click();
   $('#txt-enunciado').value = texto;
