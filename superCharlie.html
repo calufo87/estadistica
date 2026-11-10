@@ -17,6 +17,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-ap
 header.top{padding:28px 0 16px}
 header.top h1{font-size:27px;margin:0 0 4px;letter-spacing:-.015em}
 header.top p{margin:0;color:var(--muted)}
+.version{display:inline-block;vertical-align:middle;font-size:12px;font-weight:600;letter-spacing:0;padding:2px 9px;border-radius:999px;background:var(--acc-soft);color:var(--acc);cursor:help}
+.version-pie{font-variant-numeric:tabular-nums}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin:0 0 16px}
 h2{font-size:17px;margin:0 0 12px}
 h3{font-size:15px;margin:22px 0 8px}
@@ -158,7 +160,7 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 </head>
 <body>
 <header class="top"><div class="wrap">
-  <h1>Estadística Descriptiva</h1>
+  <h1>Estadística Descriptiva <span id="version" class="version" title="">v?</span></h1>
   <p>Análisis de Datos Cuantitativos en Psicología I · redondeo por paridad</p>
   <button id="o-abrir-top" class="prim abrir-top">💬 Abrir asistente</button>
   <button id="ir-marcador" class="abrir-top">📤 Enviar desde otras páginas</button>
@@ -338,7 +340,7 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
   <h3 id="enviar-desde">Enviar ejercicios desde otras páginas</h3>
   <p class="hint">Arrastrá este botón a tu barra de favoritos (si no la ves: Ctrl + Shift + B). Después, en cualquier página, marcá el ejercicio con el mouse y tocá el favorito: se abre esta herramienta con el texto pegado y el asistente lo resuelve. Si en esa página hay casillas de respuesta cerca del ejercicio, las respuestas vuelven a esa página en un panel para que las revisés y las escribás.</p>
   <p class="hint"><b>Si ya tenías el favorito de antes, borralo y arrastrá este de nuevo:</b> el viejo solo envía el texto y no recibe las respuestas.</p>
-  <p><a id="marcador" class="boton-marcador" href="#">📤 Enviar a mi herramienta</a></p>
+  <p><a id="marcador" class="boton-marcador" href="#">📤 Enviar a mi herramienta</a> <span id="marcador-version" class="hint"></span></p>
   <p id="marcador-aviso" class="estado"></p>
   <details><summary>Si no podés arrastrarlo</summary>
     <ol class="hint">
@@ -353,7 +355,7 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 </main>
 <button id="o-abrir" class="prim fab">💬 Asistente</button>
 <aside id="asistente" class="drawer" aria-label="Asistente">
-  <div class="drawer-top"><h2>Asistente</h2><button id="o-cerrar" aria-label="Cerrar">✕</button></div>
+  <div class="drawer-top"><h2>Asistente <span id="version-chat" class="version"></span></h2><button id="o-cerrar" aria-label="Cerrar">✕</button></div>
   <div class="fila proveedor"><label>Usar <select id="ia-proveedor"><option value="ollama">Ollama (en mi computadora, gratis)</option><option value="claude">Claude (en la nube, con clave de API)</option></select></label></div>
   <details class="conexion" id="c-conexion" hidden><summary>Conexión con Claude <span id="c-chip" class="chip">sin clave</span></summary>
     <div class="fila"><label>Clave de API <input id="c-clave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label></div>
@@ -386,9 +388,20 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
   </div>
   <p class="hint" id="o-pie">El modelo corre en tu computadora. Los números los calcula la página; el modelo llena los campos y explica, y puede equivocarse al interpretar el ejercicio: revisá los datos que puso.</p>
 </aside>
-<footer class="wrap">Basado en Pagano, <i>Estadística para las ciencias del comportamiento</i>. Los cálculos se hacen en tu navegador. Con Ollama nada sale de tu computadora; si usás el asistente con Claude, tus mensajes y los resultados en pantalla se envían a Anthropic.</footer>
+<footer class="wrap"><b id="version-pie" class="version-pie"></b> · Basado en Pagano, <i>Estadística para las ciencias del comportamiento</i>. Los cálculos se hacen en tu navegador. Con Ollama nada sale de tu computadora; si usás el asistente con Claude, tus mensajes y los resultados en pantalla se envían a Anthropic.</footer>
 
 <script>
+/* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
+const VERSION = '5.0';
+const VERSION_FECHA = '9 nov 2026';
+const VERSION_FAVORITO = 2;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const NOVEDADES = [
+  '5.0 · Respuestas «Pregunta → respuesta» y devolución a las casillas de la página de origen; número de versión',
+  '4.0 · Favorito «Enviar a mi herramienta» para mandar texto marcado desde otras páginas',
+  '3.0 · Marcar texto en la página y preguntarle al asistente; modo agente que maneja la página y señala respuestas',
+  '2.0 · Asistente con Claude (Haiku, Sonnet, Opus) además de Ollama; elegir opciones de la página',
+  '1.0 · Herramienta de estadística descriptiva con asistente local (Ollama)'
+];
 /* ================== NÚCLEO DE CÁLCULO ================== */
 
 /* ---------- BLOQUE 0: utilidades y formateador ---------- */
@@ -2358,7 +2371,7 @@ $('#o-limpiar').onclick = () => { if(chat.control) chat.control.abort(); chat.hi
 const URL_HERRAMIENTA = location.origin + location.pathname;
 /* Este código corre DENTRO de la página de origen cuando tocás el favorito (por eso no usa nada de esta herramienta).
    Busca el texto marcado y las casillas de respuesta cercanas, abre la herramienta y espera las respuestas. */
-function marcadorOrigen(URLH){
+function marcadorOrigen(URLH, FV){
   var sel = getSelection(), t = String(sel).trim(), act = document.activeElement;
   if(!t && act && typeof act.value === 'string' && act.selectionEnd > act.selectionStart) t = act.value.slice(act.selectionStart, act.selectionEnd).trim();
   if(!t) t = prompt('No marcaste ningún texto. Pegá aquí el ejercicio:');
@@ -2469,10 +2482,10 @@ function marcadorOrigen(URLH){
   }
   window.__scOrigenH = origenH;
   var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 12));
-  window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), '_blank');
+  window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), '_blank');
 }
 function codigoMarcador(){
-  return 'javascript:' + encodeURIComponent('(' + marcadorOrigen.toString().replace(/^\s+/gm, '') + ')(' + JSON.stringify(URL_HERRAMIENTA) + ');void 0');
+  return 'javascript:' + encodeURIComponent('(' + marcadorOrigen.toString().replace(/^\s+/gm, '') + ')(' + JSON.stringify(URL_HERRAMIENTA) + ',' + VERSION_FAVORITO + ');void 0');
 }
 (function prepararMarcador(){
   const a = $('#marcador'), aviso = $('#marcador-aviso');
@@ -2483,6 +2496,7 @@ function codigoMarcador(){
     return;
   }
   a.href = codigoMarcador();
+  $('#marcador-version').textContent = `Favorito versión ${VERSION_FAVORITO} (herramienta v${VERSION})`;
   a.addEventListener('click', e => { e.preventDefault(); aviso.className = 'estado'; aviso.textContent = 'Este botón no se toca aquí: arrastralo a la barra de favoritos y usalo en otras páginas.'; });
   $('#marcador-copiar').onclick = e => copiar(codigoMarcador(), e.target);
 })();
@@ -2491,9 +2505,14 @@ function recibirDeOtraPagina(){
   const p = new URLSearchParams(location.hash.slice(1));
   const texto = (p.get('enviar') || '').trim(), de = (p.get('de') || 'otra página').trim();
   let campos = []; try{ campos = JSON.parse(p.get('campos') || '[]'); }catch(e){}
+  const favViejo = (Number(p.get('fv')) || 1) < VERSION_FAVORITO;
   history.replaceState(null, '', location.pathname + location.search);
   if(!texto) return;
   chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de} : null;
+  if(favViejo){
+    abrirChat();
+    burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior: manda el texto, pero no recibe las respuestas de vuelta. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes → «Enviar ejercicios desde otras páginas» (versión ${VERSION}).`));
+  }
   if(chat.origen){
     abrirChat();
     burbuja('paso', esc(`🔗 Conectado con «${de}»` + (chat.origen.campos.length ? `: encontré ${chat.origen.campos.length} casilla(s) de respuesta. Las respuestas te van a aparecer en esa página para que las revisés y las escribás.` : '. No encontré casillas de respuesta cerca del texto marcado; las respuestas quedan aquí.')));
@@ -2510,6 +2529,14 @@ function recibirDeOtraPagina(){
 window.addEventListener('hashchange', recibirDeOtraPagina);
 $('#ir-marcador').onclick = () => { irA('ajustes'); setTimeout(() => $('#enviar-desde').scrollIntoView({behavior:'smooth', block:'start'}), 150); };
 
+(function mostrarVersion(){
+  const t = `v${VERSION}`, tip = `Versión ${VERSION} · ${VERSION_FECHA}\n\nNovedades:\n` + NOVEDADES.join('\n');
+  $('#version').textContent = t; $('#version').title = tip;
+  $('#version-chat').textContent = t; $('#version-chat').title = tip;
+  $('#version-pie').textContent = `Versión ${VERSION} · ${VERSION_FECHA}`;
+  document.title = `Estadística Descriptiva · v${VERSION}`;
+  console.info(`Herramienta de estadística · versión ${VERSION} (${VERSION_FECHA})`);
+})();
 mostrarAjustes();
 calcNormal();
 conectarAsistente(false);
