@@ -138,6 +138,10 @@ tr.senalado td{background:rgba(232,163,61,.25)!important}
 .lista-resp li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
 .lista-resp .lr-p{flex:1}
 .lista-resp .lr-v{font-weight:700;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.archivo-resp{margin:2px 0}
+.fila-arch{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:2px 0 4px 26px}
+.fila-arch button{font-size:12.5px;padding:4px 9px}
+.lista-resp li{cursor:copy}
 mark.dudoso{background:transparent;color:var(--warn);text-decoration:underline wavy var(--warn);font-weight:600}
 .respuestas{margin:4px 0 0;padding-left:0;list-style:none;font-size:14px}
 .respuestas li{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--line)}
@@ -375,7 +379,11 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
   <label class="check" id="o-agente-l" hidden><input type="checkbox" id="o-agente" checked> Modo agente: Claude mira toda la página, la maneja paso a paso y te señala la respuesta</label>
   <label class="check"><input type="checkbox" id="o-acciones" checked> Que el asistente pase los datos del ejercicio a la página</label>
   <label class="check"><input type="checkbox" id="o-contexto" checked> Enviarle los resultados que tengo en pantalla</label>
-  <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (desmarcalo para ir más rápido)</label>
+  <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (si no, solo lo resuelve)</label>
+  <div class="archivo-resp">
+    <label class="check"><input type="checkbox" id="o-guardar" checked> Ir agregando las respuestas a un archivo de texto</label>
+    <div class="fila-arch"><span id="o-archivo-nombre" class="hint"></span><button id="o-archivo-elegir">Elegir archivo…</button><button id="o-historial">Descargar historial (.txt)</button></div>
+  </div>
   <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»</div></div>
   <div class="chat-entrada">
     <div id="o-marcado" class="marcado-chip" hidden><span></span><button id="o-marcado-x" aria-label="Quitar texto marcado">✕</button></div>
@@ -392,10 +400,12 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.0';
+const VERSION = '5.2';
 const VERSION_FECHA = '9 nov 2026';
-const VERSION_FAVORITO = 2;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 3;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.2 · Con Claude no explica por defecto; pasar respuestas de a una o eligiendo la casilla; respuestas agregadas a un archivo .txt',
+  '5.1 · Si Claude se olvida de devolver las respuestas a la página de origen, la herramienta se lo recuerda',
   '5.0 · Respuestas «Pregunta → respuesta» y devolución a las casillas de la página de origen; número de versión',
   '4.0 · Favorito «Enviar a mi herramienta» para mandar texto marcado desde otras páginas',
   '3.0 · Marcar texto en la página y preguntarle al asistente; modo agente que maneja la página y señala respuestas',
@@ -2107,7 +2117,7 @@ function entregarRespuestas(a){
       try{
         window.opener.postMessage({tipo:'sc-respuestas', token:chat.origen.token, resumen:a.resumen || '',
           respuestas:filas.map(r => ({campo:r.campo || null, pregunta:r.pregunta || '', valor:String(r.respuesta)}))}, '*');
-        h += `<p class="hint">📨 Las mandé a «${esc(chat.origen.titulo)}». Revisalas en el panel de esa página y tocá «Escribir en las casillas».</p>`;
+        h += `<p class="hint">📨 Las mandé a «${esc(chat.origen.titulo)}». En esa pestaña tocá «Pasar» en cada una que quieras agregar, o «Pasar todas».</p>`;
         msg += ` Mandé ${conCampo.length} a las casillas de la página de origen; el estudiante las revisa y confirma allá.`;
       }catch(e){ h += '<p class="aviso">No pude mandarlas a la página de origen. Copialas desde aquí.</p>'; msg += ' No se pudieron mandar a la página de origen.'; }
     } else {
@@ -2115,8 +2125,11 @@ function entregarRespuestas(a){
       msg += ' La página de origen no está conectada.';
     }
   }
-  h += '<div class="botones"><button class="copiar-resp">Copiar respuestas</button></div>';
-  chat.respuestasPendientes = {h, filas};   /* se muestra al final, debajo del recuadro de resultados */
+  h += '<div class="botones"><button class="copiar-resp">Copiar respuestas</button></div><p class="hint estado-archivo"></p>';
+  const registro = {fecha:new Date().toISOString(), origen:chat.origen ? chat.origen.titulo : '', ejercicio:chat.ultimoEjercicio || '', resumen:a.resumen || '',
+    respuestas:filas.map(r => ({pregunta:r.pregunta || '', respuesta:String(r.respuesta)}))};
+  guardarEnHistorial(registro);
+  chat.respuestasPendientes = {h, filas, registro};   /* se muestra al final, debajo del recuadro de resultados */
   return msg;
 }
 function mostrarRespuestasPendientes(){
@@ -2124,7 +2137,79 @@ function mostrarRespuestasPendientes(){
   chat.respuestasPendientes = null;
   const div = burbuja('resultado', rp.h);
   div.querySelector('.copiar-resp').onclick = e => copiar(rp.filas.map((r, k) => `Pregunta ${k + 1}${r.pregunta ? ' (' + r.pregunta + ')' : ''}: ${r.respuesta}`).join('\n'), e.target);
+  div.querySelectorAll('.lista-resp li').forEach((li, k) => { li.title = 'Clic para copiar esta respuesta'; li.onclick = () => copiar(String(rp.filas[k].respuesta), li.querySelector('.lr-v')); });
+  agregarAlArchivo(rp.registro, div.querySelector('.estado-archivo'));
 }
+/* ---------- RESPUESTAS EN ARCHIVO DE TEXTO: se van agregando al final de un mismo .txt ---------- */
+const HISTORIAL_MAX = 500;
+function leerHistorial(){ try{ return JSON.parse(localStorage.getItem('ed_respuestas')) || []; }catch(e){ return []; } }
+function guardarEnHistorial(reg){ const h = leerHistorial(); h.push(reg); try{ localStorage.setItem('ed_respuestas', JSON.stringify(h.slice(-HISTORIAL_MAX))); }catch(e){} actualizarNombreArchivo(); }
+function textoRegistro(r){
+  const f = new Date(r.fecha), dd = n => String(n).padStart(2, '0');
+  const fecha = `${dd(f.getDate())}/${dd(f.getMonth() + 1)}/${f.getFullYear()} ${dd(f.getHours())}:${dd(f.getMinutes())}`;
+  const L = ['==================================================', `Fecha: ${fecha}`];
+  if(r.origen) L.push(`Origen: ${r.origen}`);
+  if(r.ejercicio) L.push('Ejercicio:', ...String(r.ejercicio).trim().split(/\r?\n/).map(x => '  ' + x));
+  if(r.resumen) L.push(`Resumen: ${r.resumen}`);
+  L.push('Respuestas:', ...r.respuestas.map((x, k) => `  Pregunta ${k + 1}${x.pregunta ? ' · ' + x.pregunta : ''}: ${x.respuesta}`), '', '');
+  return L.join('\r\n');
+}
+function descargarTexto(nombre, texto){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿' + texto], {type:'text/plain;charset=utf-8'}));
+  a.download = nombre; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+/* El archivo elegido se recuerda en el navegador (IndexedDB) para seguir agregando en él */
+const puedeAgregar = 'showSaveFilePicker' in window;
+function bd(){ return new Promise((ok, mal) => { const r = indexedDB.open('herramienta-estadistica', 1); r.onupgradeneeded = () => r.result.createObjectStore('kv'); r.onsuccess = () => ok(r.result); r.onerror = () => mal(r.error); }); }
+async function bdLeer(k){ try{ const d = await bd(); return await new Promise(ok => { const q = d.transaction('kv').objectStore('kv').get(k); q.onsuccess = () => ok(q.result); q.onerror = () => ok(null); }); }catch(e){ return null; } }
+async function bdGuardar(k, v){ try{ const d = await bd(); await new Promise(ok => { const t = d.transaction('kv', 'readwrite'); t.objectStore('kv').put(v, k); t.oncomplete = ok; t.onerror = ok; }); }catch(e){} }
+let archivoResp = null;
+async function actualizarNombreArchivo(){
+  if(!archivoResp) archivoResp = await bdLeer('archivo');
+  const n = leerHistorial().length;
+  $('#o-archivo-nombre').textContent = !puedeAgregar ? `${n} guardada(s) en el historial` : archivoResp ? `Archivo: ${archivoResp.name} · ${n} en el historial` : `Sin archivo elegido · ${n} en el historial`;
+}
+async function elegirArchivo(){
+  archivoResp = await window.showSaveFilePicker({suggestedName:'respuestas_estadistica.txt', types:[{description:'Texto', accept:{'text/plain':['.txt']}}]});
+  await bdGuardar('archivo', archivoResp); actualizarNombreArchivo();
+  return archivoResp;
+}
+async function escribirAlFinal(texto){
+  const f = await archivoResp.getFile();
+  const w = await archivoResp.createWritable({keepExistingData:true});
+  await w.seek(f.size); await w.write((f.size === 0 ? '﻿' : '') + texto); await w.close();
+}
+async function agregarAlArchivo(reg, out){
+  if(!$('#o-guardar').checked){ if(out) out.textContent = ''; return; }
+  const texto = textoRegistro(reg);
+  if(!puedeAgregar){ if(out) out.textContent = '💾 Guardada en el historial. Tu navegador no deja agregar a un archivo: usá «Descargar historial (.txt)».'; return; }
+  if(!archivoResp) archivoResp = await bdLeer('archivo');
+  const ponerBoton = (txt, accion) => {
+    if(!out) return;
+    out.innerHTML = ''; const b = document.createElement('button'); b.textContent = txt; out.appendChild(b);
+    b.onclick = async () => { try{ await accion(); await escribirAlFinal(texto); out.textContent = `💾 Agregada al final de ${archivoResp.name}.`; }catch(e){ if(e.name !== 'AbortError') out.textContent = '⚠ No se pudo guardar: ' + e.message; } };
+  };
+  if(!archivoResp){ ponerBoton('💾 Elegir archivo y guardar estas respuestas', elegirArchivo); return; }
+  try{
+    const perm = await archivoResp.queryPermission({mode:'readwrite'});
+    if(perm === 'granted'){ await escribirAlFinal(texto); if(out) out.textContent = `💾 Agregada al final de ${archivoResp.name}.`; return; }
+    ponerBoton(`💾 Agregar a ${archivoResp.name}`, async () => { if(await archivoResp.requestPermission({mode:'readwrite'}) !== 'granted') throw new Error('no diste permiso para escribir en el archivo'); });
+  }catch(e){ if(out) out.textContent = '⚠ No se pudo guardar en el archivo: ' + e.message + '. Queda en el historial.'; }
+}
+$('#o-archivo-elegir').onclick = async () => { try{ await elegirArchivo(); }catch(e){} };
+if(!puedeAgregar) $('#o-archivo-elegir').hidden = true;
+$('#o-historial').onclick = () => {
+  const h = leerHistorial();
+  if(!h.length){ $('#o-archivo-nombre').textContent = 'Todavía no hay respuestas guardadas.'; return; }
+  const d = new Date(), dd = n => String(n).padStart(2, '0');
+  descargarTexto(`respuestas_${d.getFullYear()}-${dd(d.getMonth() + 1)}-${dd(d.getDate())}.txt`, h.map(textoRegistro).join(''));
+};
+$('#o-guardar').checked = cfgIA.guardarArchivo !== false;
+$('#o-guardar').addEventListener('change', e => { cfgIA.guardarArchivo = e.target.checked; guardarIA(); });
+actualizarNombreArchivo();
+
 const REGLAS_AGENTE = `
 
 MODO AGENTE: podés ver y manejar toda la página con las herramientas.
@@ -2151,6 +2236,7 @@ async function agenteClaude(txt){
       `\nAl final, en entregar_respuestas poné en campo la casilla que corresponde a cada respuesta, en el formato que pide: número tal como lo da la página (coma decimal), en listas y opción única el valor exacto de una opción, en casillas "si" o "no". Si una casilla no tiene que ver con lo que se resolvió, no la uses.`;
   }
   const hechos = []; let vistos = foto + '\n' + contextoActual(), final = '';
+  let entregoAlOrigen = false, recordado = false;
   const aviso = burbuja('paso', 'Mirando la página…');
   for(let paso = 1; paso <= 15; paso++){
     const cuerpo = {model:cfgIA.modeloClaude, max_tokens:2000, system:sistema, messages:conv};
@@ -2161,10 +2247,19 @@ async function agenteClaude(txt){
     conv.push({role:'assistant', content:bloques});
     const usos = bloques.filter(b => b.type==='tool_use');
     const texto = bloques.filter(b => b.type==='text').map(b => b.text).join('\n').trim();
-    if(!usos.length){ final = texto; break; }
+    if(!usos.length){
+      /* refuerzo: si hay casillas en la página de origen y todavía no se mandaron respuestas, se le pide una vez más */
+      if(usarHerr && chat.origen && chat.origen.campos.length && !entregoAlOrigen && !recordado){
+        recordado = true;
+        conv.push({role:'user', content:'Todavía no mandaste las respuestas a las casillas de la página de origen. Usá ahora entregar_respuestas con una fila por pregunta y en cada una el campo de la casilla que le corresponde. Después escribí tu mensaje final.'});
+        continue;
+      }
+      final = texto; break;
+    }
     if(texto) burbuja('paso', esc(texto.length > 240 ? texto.slice(0,237)+'…' : texto));
     const devoluciones = [];
     for(const u of usos){
+      if(u.name==='entregar_respuestas' && (u.input && Array.isArray(u.input.respuestas) && u.input.respuestas.some(r => r && r.campo))) entregoAlOrigen = true;
       let res, error = false;
       try{ res = String(ejecutarHerramienta(u.name, u.input || {}, hechos)); }catch(e){ res = 'Error: ' + e.message; error = true; }
       if(u.name!=='ver_pantalla' && u.name!=='entregar_respuestas' && !(u.name==='senalar_respuesta' && !error && !res.startsWith('Señalé'))) burbuja(error ? 'err' : 'accion', esc(error ? res : describirPaso(u.name, u.input || {})));
@@ -2189,6 +2284,7 @@ const PIE_OLLAMA = $('#o-pie').textContent;
 function aplicarProveedor(){
   $('#ia-proveedor').value = cfgIA.proveedor;
   $('#o-conexion').hidden = esClaude(); $('#c-conexion').hidden = !esClaude(); $('#o-agente-l').hidden = !esClaude();
+  $('#o-explicar').checked = esClaude() ? !!cfgIA.explicarClaude : cfgIA.explicarOllama !== false;
   $('#o-pie').textContent = esClaude()
     ? 'Claude corre en la nube de Anthropic: tus mensajes y los resultados en pantalla se envían allá, y cada pregunta gasta un poco de tu crédito. Los números los calcula la página; Claude llena los campos, elige opciones y explica. Revisá los datos que puso.'
     : PIE_OLLAMA;
@@ -2203,6 +2299,7 @@ $('#c-guardar').onclick = () => {
   if(!/^sk-ant-/.test(k)){ $('#o-estado').className = 'estado err'; $('#o-estado').textContent = 'Esa no parece una clave de Claude: tiene que empezar con sk-ant-'; return; }
   cfgIA.claveClaude = k; guardarIA(); detectarClaude();
 };
+$('#o-explicar').addEventListener('change', e => { if(esClaude()) cfgIA.explicarClaude = e.target.checked; else cfgIA.explicarOllama = e.target.checked; guardarIA(); });
 $('#c-olvidar').onclick = () => { cfgIA.claveClaude = ''; $('#c-clave').value = ''; guardarIA(); detectarClaude(); };
 $('#c-probar').onclick = () => detectarClaude();
 $('#c-modelo').addEventListener('change', e => { cfgIA.modeloClaude = e.target.value; guardarIA(); chipC('ok', nombreModeloClaude(cfgIA.modeloClaude)); if(cfgIA.claveClaude){ $('#o-estado').className = 'estado ok'; $('#o-estado').textContent = `Listo. Ahora uso ${nombreModeloClaude(cfgIA.modeloClaude)}.`; } });
@@ -2287,6 +2384,7 @@ $('#o-marcado-x').onclick = () => soltarMarcado(true);
 
 async function enviarMensaje(){
   let txt = $('#o-msg').value.trim();
+  if(!chat.control) chat.ultimoEjercicio = marcado.texto || txt;
   if(marcado.texto){
     txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
     if(!chat.control){ soltarMarcado(false); $('#o-msg').placeholder = 'Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)'; }
@@ -2421,39 +2519,44 @@ function marcadorOrigen(URLH, FV){
   window.__scToken = token; window.__scMapa = mapa; window.__scCampos = campos;
   var origenH = new URL(URLH).origin;
   window.__scPanel = function(d){
-    var viejo = document.getElementById('sc-panel'); if(viejo) viejo.remove();
+    var viejo = document.getElementById('sc-panel'); if(viejo && viejo.__cerrar) viejo.__cerrar(); else if(viejo) viejo.remove();
     var p = document.createElement('div'); p.id = 'sc-panel';
-    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:380px;max-height:80vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #2c5a87;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
-    var h = '<div style="font-weight:700;font-size:15px;color:#2c5a87;margin-bottom:6px">📥 Respuestas de mi herramienta</div>';
-    if(d.resumen) h += '<div style="color:#5d6574;margin-bottom:8px">' + limpio(d.resumen).replace(/</g, '&lt;') + '</div>';
+    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:390px;max-height:85vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #2c5a87;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
+    var esc2 = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
+    var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#2c5a87;color:#fff' : 'border:1px solid #cfcac0;background:#fff;color:#1c2230') + '">' + txt + '</button>'; };
+    var h = '<div style="font-weight:700;font-size:15px;color:#2c5a87;margin-bottom:4px">📥 Respuestas de mi herramienta</div>';
+    if(d.resumen) h += '<div style="color:#5d6574;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
+    h += '<div style="color:#5d6574;font-size:12.5px;margin-bottom:6px">Tocá <b>Pasar</b> en cada respuesta que quieras agregar, o <b>Elegir casilla…</b> y después hacé clic en la casilla donde va.</div>';
+    var hayCampo = false;
     d.respuestas.forEach(function(r, k){
-      var c = campos.filter(function(x){ return x.id === r.campo; })[0];
+      var c = campos.filter(function(x){ return x.id === r.campo; })[0]; if(c) hayCampo = true;
       var nombre = (r.pregunta || (c && (c.etiqueta || c.pregunta)) || ('Pregunta ' + (k + 1)));
       var mostrar = String(r.valor);
       if(c && c.opciones){ var op = c.opciones.filter(function(o){ return o.valor === mostrar; })[0]; if(op && op.texto) mostrar = op.texto; }
-      h += '<label style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-top:1px solid #e3e0d8;cursor:pointer"><input type="checkbox" data-k="' + k + '" ' + (c ? 'checked' : 'disabled') + ' style="margin-top:3px">' +
-        '<span style="flex:1"><span style="color:#5d6574">' + limpio(nombre).slice(0, 90).replace(/</g, '&lt;') + '</span><br><b>' + mostrar.replace(/</g, '&lt;') + '</b>' +
-        (c ? '' : ' <span style="color:#b4532a">(sin casilla)</span>') + ' <span data-e="' + k + '"></span></span></label>';
+      h += '<div style="padding:7px 0;border-top:1px solid #e3e0d8"><span style="color:#5d6574">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span><br><b style="font-size:15px">' + esc2(mostrar) + '</b> <span data-e="' + k + '" style="font-weight:600"></span>' +
+        '<div style="display:flex;gap:6px;margin-top:5px">' + (c ? btn('pasar', k, 'Pasar', true) : '<span style="color:#b4532a;font-size:12.5px;align-self:center">sin casilla detectada</span>') + btn('elegir', k, 'Elegir casilla…') + '</div></div>';
     });
-    h += '<div style="display:flex;gap:8px;margin-top:10px"><button data-a="escribir" style="padding:7px 12px;border-radius:8px;border:0;background:#2c5a87;color:#fff;font:inherit;cursor:pointer">Escribir en las casillas</button><button data-a="cerrar" style="padding:7px 12px;border-radius:8px;border:1px solid #e3e0d8;background:#fff;color:#1c2230;font:inherit;cursor:pointer">Cerrar</button></div>';
+    h += '<div data-aviso style="display:none;margin-top:8px;padding:7px 9px;border-radius:8px;background:#fff4e0;color:#8a5a00;font-size:13px"></div>';
+    h += '<div style="display:flex;gap:8px;margin-top:10px">' + (hayCampo ? btn('todas', '', 'Pasar todas', true) : '') + btn('cerrar', '', 'Cerrar') + '</div>';
     p.innerHTML = h; document.body.appendChild(p);
+    var aviso = p.querySelector('[data-aviso]');
     var norm = function(x){ return limpio(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
     var setValor = function(el, v){
       var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
       Object.getOwnPropertyDescriptor(proto, 'value').set.call(el, v);
       el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true}));
     };
-    var escribir = function(r){
-      var els = window.__scMapa[r.campo]; if(!els || !els.length) return 'no encontré la casilla';
-      var el = els[0], v = String(r.valor), quiere = norm(v);
+    var escribirEn = function(els, valor){
+      if(!els || !els.length) return 'no encontré la casilla';
+      var el = els[0], v = String(valor), quiere = norm(v);
       if(el.type === 'radio'){
         var op = els.filter(function(x){ return norm(x.value) === quiere; })[0] || els.filter(function(x){ return norm(etiqueta(x)) === quiere; })[0] || els.filter(function(x){ return quiere && norm(etiqueta(x)).indexOf(quiere) >= 0; })[0];
-        if(!op) return 'esa opción no existe'; op.click(); el = op;
+        if(!op) return 'esa opción no existe en esa casilla'; op.click(); el = op;
       } else if(el.type === 'checkbox'){
         var si = /^(si|true|1|marcar|marcada|verdadero|v)$/.test(quiere); if(el.checked !== si) el.click();
       } else if(el.tagName === 'SELECT'){
         var o = [].filter.call(el.options, function(x){ return norm(x.value) === quiere || norm(x.text) === quiere; })[0] || [].filter.call(el.options, function(x){ return quiere && norm(x.text).indexOf(quiere) >= 0; })[0];
-        if(!o) return 'esa opción no existe'; el.value = o.value; el.dispatchEvent(new Event('change', {bubbles:true}));
+        if(!o) return 'esa opción no existe en esa lista'; el.value = o.value; el.dispatchEvent(new Event('change', {bubbles:true}));
       } else {
         if(el.type === 'number') v = v.replace(/\s/g, '').replace(',', '.');
         setValor(el, v);
@@ -2461,15 +2564,34 @@ function marcadorOrigen(URLH, FV){
       el.style.outline = '3px solid #e8a33d'; el.style.outlineOffset = '2px';
       return '';
     };
+    var marcar = function(k, err){
+      var out = p.querySelector('[data-e="' + k + '"]'); out.textContent = err ? '⚠ ' + err : '✓ pasada'; out.style.color = err ? '#b4532a' : '#2f7d4f';
+      var b = p.querySelector('button[data-a="pasar"][data-k="' + k + '"]'); if(b && !err){ b.textContent = '✓ Pasada'; b.style.background = '#2f7d4f'; }
+    };
+    var esperando = null, tragarClick = false;
+    var alElegir = function(e){
+      if(esperando === null) return;
+      var el = e.target && e.target.closest ? e.target.closest('input,textarea,select') : null;
+      if(!el || p.contains(el)) return;
+      e.preventDefault(); e.stopPropagation();
+      var els = el.type === 'radio' && el.name ? [].slice.call(document.getElementsByName(el.name)) : [el];
+      var k = esperando; esperando = null; aviso.style.display = 'none';
+      marcar(k, escribirEn(els, d.respuestas[k].valor));
+      tragarClick = true; setTimeout(function(){ tragarClick = false; }, 600);
+    };
+    var alClick = function(e){ if(tragarClick && !p.contains(e.target)){ e.preventDefault(); e.stopPropagation(); tragarClick = false; } };
+    var alTecla = function(e){ if(e.key === 'Escape' && esperando !== null){ esperando = null; aviso.style.display = 'none'; } };
+    document.addEventListener('mousedown', alElegir, true);
+    document.addEventListener('click', alClick, true);
+    document.addEventListener('keydown', alTecla, true);
+    p.__cerrar = function(){ document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); p.remove(); };
     p.addEventListener('click', function(e){
       var b = e.target.closest('button'); if(!b) return;
-      if(b.dataset.a === 'cerrar'){ p.remove(); return; }
-      d.respuestas.forEach(function(r, k){
-        var ck = p.querySelector('input[data-k="' + k + '"]'), out = p.querySelector('[data-e="' + k + '"]');
-        if(!ck || !ck.checked) return;
-        var err = escribir(r); out.textContent = err ? '⚠ ' + err : '✓'; out.style.color = err ? '#b4532a' : '#2f7d4f';
-      });
-      b.textContent = 'Listo ✓';
+      var a = b.dataset.a, k = b.dataset.k === '' ? null : Number(b.dataset.k);
+      if(a === 'cerrar'){ p.__cerrar(); return; }
+      if(a === 'pasar'){ var r = d.respuestas[k]; marcar(k, escribirEn(window.__scMapa[r.campo], r.valor)); return; }
+      if(a === 'elegir'){ esperando = k; aviso.style.display = 'block'; aviso.textContent = 'Ahora hacé clic en la casilla donde va «' + String(d.respuestas[k].valor) + '». (Esc para cancelar)'; return; }
+      if(a === 'todas'){ d.respuestas.forEach(function(r, j){ if(r.campo && window.__scMapa[r.campo]) marcar(j, escribirEn(window.__scMapa[r.campo], r.valor)); }); b.textContent = 'Listo ✓'; }
     });
   };
   if(!window.__scEscuchando){
@@ -2511,7 +2633,7 @@ function recibirDeOtraPagina(){
   chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de} : null;
   if(favViejo){
     abrirChat();
-    burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior: manda el texto, pero no recibe las respuestas de vuelta. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes → «Enviar ejercicios desde otras páginas» (versión ${VERSION}).`));
+    burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior${(Number(p.get('fv')) || 1) < 2 ? ': manda el texto, pero no recibe las respuestas de vuelta' : ': le faltan las mejoras nuevas del panel de respuestas'}. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes → «Enviar ejercicios desde otras páginas» (versión ${VERSION}).`));
   }
   if(chat.origen){
     abrirChat();
