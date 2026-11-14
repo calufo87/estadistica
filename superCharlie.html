@@ -6,9 +6,17 @@
 <title>Estadística Descriptiva</title>
 <meta name="description" content="Estadística descriptiva para Psicología: frecuencias, tendencia central, dispersión, tallo y hojas, puntajes z y curva normal. Coma decimal y redondeo por paridad.">
 <style>
-:root{--bg:#f5f4ef;--card:#ffffff;--ink:#1c2230;--muted:#5d6574;--line:#e2dfd6;--acc:#2c5a87;--acc-ink:#ffffff;--acc-soft:#e5edf6;--shade:rgba(44,90,135,.28);--warn:#9a3b2e;--ok:#2d6a4f}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13161b;--card:#1c2027;--ink:#e6e8ed;--muted:#9aa2b0;--line:#2c323c;--acc:#82b2e2;--acc-ink:#0f1c2a;--acc-soft:#223142;--shade:rgba(130,178,226,.32);--warn:#e48d7f;--ok:#7cc5a1}}
-:root[data-theme="dark"]{--bg:#13161b;--card:#1c2027;--ink:#e6e8ed;--muted:#9aa2b0;--line:#2c323c;--acc:#82b2e2;--acc-ink:#0f1c2a;--acc-soft:#223142;--shade:rgba(130,178,226,.32);--warn:#e48d7f;--ok:#7cc5a1}
+:root{color-scheme:light dark;--bg:#f8fafd;--card:#ffffff;--ink:#1f1f1f;--muted:#474747;--line:#e3e3e3;--acc-base:#0b57d0;--acc-ink:#ffffff;--warn:#b3261e;--ok:#146c2e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--gris:#9aa0a6;--bg:#1f1f1f;--card:#282828;--ink:#e3e3e3;--muted:#c4c7c5;--line:#444746;--acc-base:#a8c7fa;--acc-ink:#062e6f;--warn:#f2b8b5;--ok:#6dd58c}}
+:root[data-theme="dark"]{color-scheme:dark;--gris:#9aa0a6;--bg:#1f1f1f;--card:#282828;--ink:#e3e3e3;--muted:#c4c7c5;--line:#444746;--acc-base:#a8c7fa;--acc-ink:#062e6f;--warn:#f2b8b5;--ok:#6dd58c}
+:root[data-theme="light"]{color-scheme:light}
+/* acento del sistema (Windows) cuando el navegador lo comparte */
+@supports (color:AccentColor){:root{--acc-base:AccentColor;--acc-ink:AccentColorText}}
+/* intensidad del color (Ajustes): mezcla el acento con un gris tranquilo */
+:root{--int:60%;--gris:#5f6368;--acc:color-mix(in srgb, var(--acc-base) var(--int), var(--gris));--acc-soft:color-mix(in srgb, var(--acc) 16%, var(--card));--shade:color-mix(in srgb, var(--acc) 26%, transparent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--gris:#9aa0a6}}
+:root[data-theme="dark"]{--gris:#9aa0a6}
+input,select,textarea,progress{accent-color:var(--acc)}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
@@ -177,7 +185,9 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 #sc-recorte{position:fixed;inset:0;z-index:99;background:#1c2230;cursor:crosshair;display:flex;align-items:center;justify-content:center}
 #sc-recorte img{max-width:100%;max-height:100%;user-select:none;-webkit-user-drag:none}
 #sc-recorte .caja{position:fixed;border:2px dashed #e8a33d;background:rgba(232,163,61,.15);pointer-events:none;display:none}
-#sc-recorte .ayuda{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#2c5a87;color:#fff;padding:6px 12px;border-radius:999px;font-size:13px;pointer-events:none}
+#sc-recorte .ayuda{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#0b57d0;color:#fff;padding:6px 12px;border-radius:999px;font-size:13px;pointer-events:none}
+.fila-int{display:flex;align-items:center;gap:10px}.fila-int input{flex:1;padding:0;border:0;background:transparent}
+#o-int-l{display:flex;flex-direction:row;align-items:center;gap:8px}#o-int-l input{flex:1;padding:0;border:0;background:transparent}
 </style>
 </head>
 <body>
@@ -344,6 +354,7 @@ body.flotante.mini .drawer-top h2{font-size:14px}
   <h2>Ajustes de decimales</h2>
   <p class="hint">Frecuencias, N y hojas siempre van sin decimales. Lo demás se puede ajustar si tu profe pide otra cosa.</p>
   <div class="fila">
+    <label>Intensidad del color <span class="fila-int"><input id="a-int" type="range" min="0" max="100" step="5"><span id="a-int-v" class="hint"></span></span></label>
     <label>Separador decimal <select id="a-sep"><option value="coma">Coma (72,5)</option><option value="punto">Punto (72.5)</option></select></label>
   </div>
   <div class="fila">
@@ -396,6 +407,7 @@ body.flotante.mini .drawer-top h2{font-size:14px}
   <p id="o-estado" class="estado"></p>
   <label class="check" id="o-agente-l" hidden><input type="checkbox" id="o-agente" checked> Modo agente: Claude mira toda la página, la maneja paso a paso y te señala la respuesta</label>
   <label class="check"><input type="checkbox" id="o-acciones"> Usar la página para calcular (llena los campos y la página hace las cuentas). Si está apagada, el asistente lee, analiza y te da las respuestas sin tocar la página.</label>
+  <label id="o-int-l">🎨 Intensidad del color <input id="o-int" type="range" min="0" max="100" step="5"></label>
   <label class="check"><input type="checkbox" id="o-contexto" checked> Enviarle los resultados que tengo en pantalla</label>
   <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (si no, solo lo resuelve)</label>
   <div class="archivo-resp">
@@ -420,10 +432,12 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.6';
+const VERSION = '5.8';
 const VERSION_FECHA = '14 nov 2026';
 const VERSION_FAVORITO = 5;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.8 · Control de intensidad del color (en Ajustes y en el asistente): de gris tranquilo a color completo',
+  '5.7 · Colores como Chrome/Edge: grises neutros, azul del navegador (o el acento de Windows) y modo claro u oscuro igual que el navegador',
   '5.6 · Por defecto el asistente solo lee, analiza y da las respuestas, sin usar la página; la página calcula solo si activás «Usar la página para calcular»',
   '5.5 · Asistente en ventana flotante (se mueve por la pantalla y se minimiza); «Marcar área» en la página del ejercicio; ve imágenes; con Ollama las respuestas también se pasan a las casillas; el favorito reusa la pestaña de superCharlie que ya está abierta (favorito versión 5)',
   '5.4 · Cambiar entre Claude y el modelo local escribiéndolo en el chat; opción para que el modelo local haga las cuentas solo, sin usar la página',
@@ -1314,7 +1328,7 @@ ${sombras}<path class="curva" d="${curva}"/>${ejes}${infl}${marcas}
 }
 $('#n-desc').onclick = () => {
   const svg = $('#n-graf svg'); if(!svg) return;
-  const estilo = `<style>.curva{fill:none;stroke:#1c2230;stroke-width:2}.eje{stroke:#5d6574;stroke-width:1}.sombra{fill:rgba(44,90,135,.28)}.txt{fill:#1c2230;font-size:12px;font-family:Arial,sans-serif}.txt2{fill:#5d6574;font-size:11px;font-family:Arial,sans-serif}.tit{fill:#1c2230;font-size:15px;font-weight:600;font-family:Arial,sans-serif}.marca{stroke:#2c5a87;stroke-width:1.6;stroke-dasharray:5 4}.marcaTxt{fill:#2c5a87;font-size:12px;font-weight:600;font-family:Arial,sans-serif}.infl,.infl-ley{fill:#2c5a87}.media{stroke:#5d6574;stroke-dasharray:2 3}.halo{paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}</style><rect width="100%" height="100%" fill="#ffffff"/>`;
+  const estilo = `<style>.curva{fill:none;stroke:#1c2230;stroke-width:2}.eje{stroke:#5d6574;stroke-width:1}.sombra{fill:rgba(11,87,208,.28)}.txt{fill:#1c2230;font-size:12px;font-family:Arial,sans-serif}.txt2{fill:#5d6574;font-size:11px;font-family:Arial,sans-serif}.tit{fill:#1c2230;font-size:15px;font-weight:600;font-family:Arial,sans-serif}.marca{stroke:#0b57d0;stroke-width:1.6;stroke-dasharray:5 4}.marcaTxt{fill:#0b57d0;font-size:12px;font-weight:600;font-family:Arial,sans-serif}.infl,.infl-ley{fill:#0b57d0}.media{stroke:#5d6574;stroke-dasharray:2 3}.halo{paint-order:stroke;stroke:#ffffff;stroke-width:4px;stroke-linejoin:round}</style><rect width="100%" height="100%" fill="#ffffff"/>`;
   const txt = svg.outerHTML.replace(/(<svg[^>]*>)/, '$1'+estilo);
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([txt], {type:'image/svg+xml'}));
@@ -2482,6 +2496,8 @@ async function flotarAsistente(){
   const d = w.document;
   d.title = 'Asistente · superCharlie';
   document.querySelectorAll('style, link[rel="stylesheet"]').forEach(st => d.head.appendChild(st.cloneNode(true)));
+  if(document.documentElement.dataset.theme) d.documentElement.dataset.theme = document.documentElement.dataset.theme;
+  d.documentElement.style.setProperty('--int', intensidad + '%');
   d.body.className = 'flotante chat-abierto';
   const asis = document.getElementById('asistente');
   asis.before(lugarAsistente);
@@ -3070,7 +3086,7 @@ function marcadorOrigen(URLH, FV){
     caja.style.cssText = 'position:fixed;border:2px dashed #e8a33d;background:rgba(232,163,61,.12);display:none;pointer-events:none';
     var ayuda = document.createElement('div');
     ayuda.textContent = '🔲 Arrastrá un recuadro sobre el ejercicio · Esc cancela';
-    ayuda.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#2c5a87;color:#fff;padding:8px 14px;border-radius:999px;font:14px system-ui,Segoe UI,Arial,sans-serif;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.2)';
+    ayuda.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#0b57d0;color:#fff;padding:8px 14px;border-radius:999px;font:14px system-ui,Segoe UI,Arial,sans-serif;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.2)';
     ov.appendChild(caja); ov.appendChild(ayuda); document.body.appendChild(ov);
     var x0 = 0, y0 = 0, arr = false;
     var mover = function(e){ caja.style.left = Math.min(x0, e.clientX) + 'px'; caja.style.top = Math.min(y0, e.clientY) + 'px'; caja.style.width = Math.abs(e.clientX - x0) + 'px'; caja.style.height = Math.abs(e.clientY - y0) + 'px'; };
@@ -3092,10 +3108,10 @@ function marcadorOrigen(URLH, FV){
   window.__scPanel = function(d){
     var viejo = document.getElementById('sc-panel'); if(viejo && viejo.__cerrar) viejo.__cerrar(); else if(viejo) viejo.remove();
     var p = document.createElement('div'); p.id = 'sc-panel';
-    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:390px;max-height:85vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #2c5a87;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
+    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:390px;max-height:85vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #0b57d0;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
     var esc2 = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-    var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#2c5a87;color:#fff' : 'border:1px solid #cfcac0;background:#fff;color:#1c2230') + '">' + txt + '</button>'; };
-    var h = '<div style="font-weight:700;font-size:15px;color:#2c5a87;margin-bottom:4px">📥 Respuestas' + (window.__scItem ? ' · Ítem ' + esc2(window.__scItem) : '') + '</div>';
+    var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#0b57d0;color:#fff' : 'border:1px solid #cfcac0;background:#fff;color:#1c2230') + '">' + txt + '</button>'; };
+    var h = '<div style="font-weight:700;font-size:15px;color:#0b57d0;margin-bottom:4px">📥 Respuestas' + (window.__scItem ? ' · Ítem ' + esc2(window.__scItem) : '') + '</div>';
     if(d.resumen) h += '<div style="color:#5d6574;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
     h += '<div style="color:#5d6574;font-size:12.5px;margin-bottom:6px">Pasá solo las que querés: tocá <b>Pasar</b> en cada una, o <b>Elegir casilla…</b> y después hacé clic en la casilla donde va.</div>';
     d.respuestas.forEach(function(r, k){
@@ -3104,7 +3120,7 @@ function marcadorOrigen(URLH, FV){
       var mostrar = String(r.valor);
       if(c && c.opciones){ var op = c.opciones.filter(function(o){ return o.valor === mostrar; })[0]; if(op && op.texto) mostrar = op.texto; }
       h += '<div style="padding:7px 0;border-top:1px solid #e3e0d8"><span style="color:#5d6574">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span>' +
-        (c && c.hoja ? ' <span style="font-size:11px;color:#2c5a87;border:1px solid #2c5a87;border-radius:999px;padding:0 6px">hoja de respuestas</span>' : '') +
+        (c && c.hoja ? ' <span style="font-size:11px;color:#0b57d0;border:1px solid #0b57d0;border-radius:999px;padding:0 6px">hoja de respuestas</span>' : '') +
         '<br><b style="font-size:15px">' + esc2(mostrar) + '</b> <span data-e="' + k + '" style="font-weight:600"></span>' +
         '<div style="display:flex;gap:6px;margin-top:5px">' + (c ? btn('pasar', k, 'Pasar', true) : '<span style="color:#b4532a;font-size:12.5px;align-self:center">sin casilla detectada</span>') + btn('elegir', k, 'Elegir casilla…') + '</div></div>';
     });
@@ -3216,6 +3232,19 @@ function recibirDeOtraPagina(){
 window.addEventListener('hashchange', recibirDeOtraPagina);
 $('#ir-marcador').onclick = () => { irA('ajustes'); setTimeout(() => $('#enviar-desde').scrollIntoView({behavior:'smooth', block:'start'}), 150); };
 
+/* intensidad del color: 0 = gris, 100 = color completo; se guarda en el navegador */
+let intensidad = 60;
+try{ const g = localStorage.getItem('ed_intensidad'); if(g !== null && !isNaN(g)) intensidad = Math.max(0, Math.min(100, Number(g))); }catch(e){}
+function aplicarIntensidad(v, guardar){
+  intensidad = v;
+  [document, pipWin && pipWin.document].forEach(d => { if(d) d.documentElement.style.setProperty('--int', v + '%'); });
+  ['#a-int','#o-int'].forEach(sel => { const r = $(sel); if(r && Number(r.value) !== v) r.value = v; });
+  const t = $('#a-int-v'); if(t) t.textContent = v + ' %';
+  const o = $('#o-int'); if(o) o.title = `Intensidad del color: ${v} %`;
+  if(guardar){ try{ localStorage.setItem('ed_intensidad', String(v)); }catch(e){} }
+}
+['#a-int','#o-int'].forEach(sel => $(sel).addEventListener('input', e => aplicarIntensidad(Number(e.target.value), true)));
+aplicarIntensidad(intensidad, false);
 try{ if(!window.name) window.name = 'superCharlie'; }catch(e){}
 (function mostrarVersion(){
   const t = `v${VERSION}`, tip = `Versión ${VERSION} · ${VERSION_FECHA}\n\nNovedades:\n` + NOVEDADES.join('\n');
