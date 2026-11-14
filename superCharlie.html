@@ -380,13 +380,14 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
   <p id="o-estado" class="estado"></p>
   <label class="check" id="o-agente-l" hidden><input type="checkbox" id="o-agente" checked> Modo agente: Claude mira toda la página, la maneja paso a paso y te señala la respuesta</label>
   <label class="check"><input type="checkbox" id="o-acciones" checked> Que el asistente pase los datos del ejercicio a la página</label>
+  <label class="check" id="o-solo-l"><input type="checkbox" id="o-solo"> Que el modelo local haga las cuentas solo, sin usar la página (puede equivocarse)</label>
   <label class="check"><input type="checkbox" id="o-contexto" checked> Enviarle los resultados que tengo en pantalla</label>
   <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (si no, solo lo resuelve)</label>
   <div class="archivo-resp">
     <label class="check"><input type="checkbox" id="o-guardar" checked> Ir agregando las respuestas a un archivo de texto</label>
     <div class="fila-arch"><span id="o-archivo-nombre" class="hint"></span><button id="o-archivo-elegir">Elegir archivo…</button><button id="o-historial">Descargar historial (.txt)</button></div>
   </div>
-  <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»</div></div>
+  <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»<br><br>También podés escribirle: «usá Claude», «usá el modelo local», «calculá vos» (el modelo local hace las cuentas sin la página) o «usá la página».</div></div>
   <div class="chat-entrada">
     <div id="o-marcado" class="marcado-chip" hidden><span></span><button id="o-marcado-x" aria-label="Quitar texto marcado">✕</button></div>
     <textarea id="o-msg" rows="3" placeholder="Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)"></textarea>
@@ -402,10 +403,11 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.3';
-const VERSION_FECHA = '9 nov 2026';
+const VERSION = '5.4';
+const VERSION_FECHA = '14 nov 2026';
 const VERSION_FAVORITO = 4;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.4 · Cambiar entre Claude y el modelo local escribiéndolo en el chat; opción para que el modelo local haga las cuentas solo, sin usar la página',
   '5.3 · Reconoce el número de ítem y busca su casilla en la hoja de respuestas; se pasan solo las respuestas que elegís (sin «Pasar todas»), también desde la herramienta',
   '5.2 · Con Claude no explica por defecto; pasar respuestas de a una o eligiendo la casilla; respuestas agregadas a un archivo .txt',
   '5.1 · Si Claude se olvida de devolver las respuestas a la página de origen, la herramienta se lo recuerda',
@@ -2306,7 +2308,7 @@ async function agenteClaude(txt){
 const PIE_OLLAMA = $('#o-pie').textContent;
 function aplicarProveedor(){
   $('#ia-proveedor').value = cfgIA.proveedor;
-  $('#o-conexion').hidden = esClaude(); $('#c-conexion').hidden = !esClaude(); $('#o-agente-l').hidden = !esClaude();
+  $('#o-conexion').hidden = esClaude(); $('#c-conexion').hidden = !esClaude(); $('#o-agente-l').hidden = !esClaude(); $('#o-solo-l').hidden = esClaude(); $('#o-solo').checked = !!cfgIA.soloModelo;
   $('#o-explicar').checked = esClaude() ? !!cfgIA.explicarClaude : cfgIA.explicarOllama !== false;
   $('#o-pie').textContent = esClaude()
     ? 'Claude corre en la nube de Anthropic: tus mensajes y los resultados en pantalla se envían allá, y cada pregunta gasta un poco de tu crédito. Los números los calcula la página; Claude llena los campos, elige opciones y explica. Revisá los datos que puso.'
@@ -2322,6 +2324,7 @@ $('#c-guardar').onclick = () => {
   if(!/^sk-ant-/.test(k)){ $('#o-estado').className = 'estado err'; $('#o-estado').textContent = 'Esa no parece una clave de Claude: tiene que empezar con sk-ant-'; return; }
   cfgIA.claveClaude = k; guardarIA(); detectarClaude();
 };
+$('#o-solo').addEventListener('change', e => { cfgIA.soloModelo = e.target.checked; guardarIA(); });
 $('#o-explicar').addEventListener('change', e => { if(esClaude()) cfgIA.explicarClaude = e.target.checked; else cfgIA.explicarOllama = e.target.checked; guardarIA(); });
 $('#c-olvidar').onclick = () => { cfgIA.claveClaude = ''; $('#c-clave').value = ''; guardarIA(); detectarClaude(); };
 $('#c-probar').onclick = () => detectarClaude();
@@ -2405,8 +2408,78 @@ barra.addEventListener('click', e => {
 });
 $('#o-marcado-x').onclick = () => soltarMarcado(true);
 
+/* ---------- ÓRDENES EN EL CHAT: cambiar de modelo o de forma de calcular escribiéndolo ---------- */
+const ORDENES = [
+  {rx:/^\s*(?:por favor\s*,?\s*)?(?:us[aá]|utiliz[aá]|cambi[aá] a|pas[aá] a|con)\s+(?:a\s+)?claude\b/i, hacer:() => cambiarProveedor('claude')},
+  {rx:/^\s*(?:por favor\s*,?\s*)?(?:us[aá]|utiliz[aá]|cambi[aá] a|pas[aá] a|con)\s+(?:a\s+)?(?:el\s+)?(?:modelo\s+local|ollama|local|qwen[\w.:]*)\b/i, hacer:() => cambiarProveedor('ollama')},
+  {rx:/^\s*(?:por favor\s*,?\s*)?(?:calcul[aá] vos|calcul[aá]lo vos|hac[eé] (?:vos )?las cuentas(?: vos)?|no us[eé]s la p[aá]gina|sin (?:usar )?la p[aá]gina|solo el modelo)\b/i, hacer:() => cambiarSolo(true)},
+  {rx:/^\s*(?:por favor\s*,?\s*)?(?:us[aá] la p[aá]gina|con la p[aá]gina|que calcule la p[aá]gina|volv[eé] a usar la p[aá]gina)\b/i, hacer:() => cambiarSolo(false)}
+];
+function cambiarProveedor(prov){
+  if(cfgIA.proveedor === prov) return prov === 'claude' ? 'Ya estoy usando Claude.' : 'Ya estoy usando el modelo local.';
+  cfgIA.proveedor = prov; guardarIA(); aplicarProveedor(); conectarAsistente(true);
+  return prov === 'claude' ? `Listo, ahora uso Claude (${nombreModeloClaude(cfgIA.modeloClaude)}).` + (cfgIA.claveClaude ? '' : ' Falta la clave de API: pegala en «Conexión con Claude».')
+    : `Listo, ahora uso el modelo local (${$('#o-modelo').value}).` + (cfgIA.soloModelo ? ' Ojo: está activado que haga las cuentas solo, sin la página.' : '');
+}
+function cambiarSolo(si){
+  cfgIA.soloModelo = si; guardarIA(); $('#o-solo').checked = si;
+  if(si) return 'Listo: el modelo local va a hacer las cuentas solo, sin usar la página. Revisá los números, porque se puede equivocar.' + (esClaude() ? ' (Ahora estás con Claude: esto se aplica cuando vuelvas al modelo local.)' : '');
+  return 'Listo: vuelvo a usar la página para calcular.';
+}
+/* Devuelve el texto que queda después de la orden (si hay) */
+function aplicarOrdenes(txt){
+  let resto = txt, avisos = [], hubo = true;
+  while(hubo){
+    hubo = false;
+    for(const o of ORDENES){
+      const m = resto.match(o.rx);
+      if(m){ avisos.push(o.hacer()); resto = resto.slice(m[0].length).replace(/^[\s,.;:!]*(?:y\s+)?/i, ''); hubo = true; }
+    }
+  }
+  return {resto, avisos};
+}
+const INSTRUCCIONES_SOLO = `Sos un tutor de estadística descriptiva para un estudiante de primer año de Psicología. El curso usa el libro de Robert Pagano.
+Esta vez el estudiante quiere que VOS hagas las cuentas, sin usar la página. Reglas:
+- Respondé en español, con un tono cercano y claro.
+- Hacé las cuentas paso a paso, con cuidado, explicando cada paso con palabras y números, no con símbolos matemáticos ni fórmulas con letras.
+- Revisá cada operación antes de seguir. Para la curva normal usá los valores de la tabla A de Pagano (z con dos decimales, áreas con cuatro decimales).
+- Usá coma como separador decimal (ejemplo: 14,35) y no pongas el símbolo de porcentaje en frecuencias relativas ni en áreas de la curva normal.
+- El redondeo del curso es por paridad: si la cifra que se elimina es exactamente 5, se redondea al número par.
+- Si te falta un dato, pedíselo al estudiante.
+- Al final escribí una línea «Respuestas:» y debajo una respuesta por pregunta, en el orden del ejercicio.`;
+async function resolverSoloModelo(div){
+  const sistema = INSTRUCCIONES_SOLO + ($('#o-explicar').checked ? '' : '\n- El estudiante quiere ir rápido: mostrá solo los pasos mínimos y las respuestas.');
+  const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
+    body: JSON.stringify({model:$('#o-modelo').value, stream:true, keep_alive:MANTENER, options:{temperature:0.1, num_ctx:4096, num_predict:1500},
+      messages:[{role:'system', content:sistema}, ...chat.historial]})});
+  if(!r.ok) await errorOllama(r);
+  const lector = r.body.getReader(), dec = new TextDecoder();
+  let buf = '', contenido = '';
+  while(true){
+    const {value, done} = await lector.read(); if(done) break;
+    buf += dec.decode(value, {stream:true});
+    const lineas = buf.split('\n'); buf = lineas.pop();
+    for(const l of lineas){
+      if(!l.trim()) continue;
+      const j = JSON.parse(l);
+      if(j.error) throw new Error(j.error);
+      if(j.message && j.message.content){ contenido += j.message.content; div.innerHTML = mdBasico(contenido); $('#chat').scrollTop = $('#chat').scrollHeight; }
+    }
+  }
+  return contenido;
+}
+
 async function enviarMensaje(){
   let txt = $('#o-msg').value.trim();
+  if(txt && !chat.control){
+    const {resto, avisos} = aplicarOrdenes(txt);
+    if(avisos.length){
+      $('#o-msg').value = '';
+      if(!resto.trim() && !marcado.texto){ burbuja('yo', esc(txt)); burbuja('ia', mdBasico(avisos.join('\n\n'))); return; }
+      burbuja('ia', mdBasico(avisos.join('\n\n')));
+      txt = resto.trim(); $('#o-msg').value = txt;
+    }
+  }
   if(!chat.control){ chat.ultimoEjercicio = marcado.texto || txt; if(!chat.origen) chat.item = itemDelTexto(marcado.texto || txt); }
   if(marcado.texto){
     txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
@@ -2421,6 +2494,15 @@ async function enviarMensaje(){
   let div = null;
   try{
     if(esClaude() && $('#o-agente').checked){ await agenteClaude(txt); return; }
+    if(!esClaude() && $('#o-solo').checked){
+      chat.historial.push({role:'user', content:txt});
+      div = burbuja('ia', '<p class="hint">Haciendo las cuentas…</p>');
+      const contenido = await resolverSoloModelo(div);
+      if(!contenido.trim()) div.innerHTML = '<p class="hint">(el modelo no respondió nada)</p>';
+      else div.insertAdjacentHTML('beforeend', '<p class="aviso">⚠ Estas cuentas las hizo el modelo, no la página. Revisalas antes de usarlas.</p>');
+      chat.historial.push({role:'assistant', content:contenido});
+      return;
+    }
     let resultados = '';
     const hechos = [];
     if($('#o-acciones').checked){
