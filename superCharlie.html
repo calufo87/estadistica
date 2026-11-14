@@ -192,6 +192,7 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 .adjuntos{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
 .adjuntos .adj{position:relative}
 .adjuntos img{max-width:110px;max-height:80px;border:1px solid var(--line);border-radius:6px;display:block}
+.adjuntos .pdf,.miniaturas .pdf{display:flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--acc-soft);font-size:12.5px;max-width:220px}
 .adjuntos .adj button{position:absolute;top:-7px;right:-7px;border-radius:999px;width:22px;height:22px;padding:0;font-size:12px;line-height:20px}
 #asistente.soltando{outline:3px dashed var(--acc);outline-offset:-6px}
 </style>
@@ -427,7 +428,7 @@ body.flotante.mini .drawer-top h2{font-size:14px}
     <textarea id="o-msg" rows="3" placeholder="Escribí tu pregunta o pegá un pantallazo con Ctrl + V… (Enter envía, Shift + Enter hace salto de línea)"></textarea>
     <div class="botones">
       <button id="o-enviar" class="prim">Enviar</button>
-      <button id="o-imagen" title="Subir un pantallazo o una foto del ejercicio (también podés pegarlo con Ctrl + V o arrastrarlo aquí)">📎 Imagen</button><input id="o-imagen-arch" type="file" accept="image/*" multiple hidden>
+      <button id="o-imagen" title="Subir un pantallazo, una foto o un PDF del ejercicio (también podés pegarlo con Ctrl + V o arrastrarlo aquí). Los PDF los lee Claude.">📎 Imagen o PDF</button><input id="o-imagen-arch" type="file" accept="image/*,application/pdf,.pdf" multiple hidden>
       <button id="o-area" title="Arrastrá un recuadro sobre el ejercicio en la otra página: lo que quede adentro (texto, casillas e imágenes) va al modelo">🔲 Marcar área</button>
       <button id="o-captura" title="Compartí la pestaña del ejercicio para que el asistente pueda ver imágenes, fórmulas y PDF">📷 Ver imágenes</button>
       <button id="o-parar" hidden>Detener</button>
@@ -440,10 +441,11 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.17';
+const VERSION = '5.18';
 const VERSION_FECHA = '14 nov 2026';
 const VERSION_FAVORITO = 12;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.18 · PDF: subilo con 📎 (o arrastralo) y Claude lo lee completo: texto, tablas, gráficos y fórmulas (hasta 20 MB y 100 páginas)',
   '5.17 · Pantallazos: pegalos con Ctrl + V, subilos con 📎 o arrastralos al asistente; también se pueden pegar en el recuadro de la página del ejercicio (favorito versión 12)',
   '5.16 · Versión local: corre desde tu computadora con «Abrir superCharlie.bat», sin GitHub; su favorito es «Enviar a mi herramienta (local)» (favorito versión 11)',
   '5.15 · «Marcar área» arriba en el recuadro de respuestas, siempre a la vista (favorito versión 10)',
@@ -1884,7 +1886,8 @@ function limpiarAccion(acc){
 function conImgsOllama(msgs){
   if(!chat.imgs || !chat.imgs.length) return msgs;
   const c = msgs.map(m => ({...m}));
-  for(let i = c.length - 1; i >= 0; i--) if(c[i].role==='user'){ c[i].images = chat.imgs.map(x => x.data); break; }
+  const solo = chat.imgs.filter(x => x.media !== 'application/pdf'); if(!solo.length) return msgs;
+  for(let i = c.length - 1; i >= 0; i--) if(c[i].role==='user'){ c[i].images = solo.map(x => x.data); break; }
   return c;
 }
 function conImgsClaude(msgs){
@@ -1892,7 +1895,9 @@ function conImgsClaude(msgs){
   const c = msgs.map(m => ({...m}));
   for(let i = c.length - 1; i >= 0; i--) if(c[i].role==='user'){
     const previo = typeof c[i].content === 'string' ? [{type:'text', text:c[i].content}] : c[i].content;
-    c[i].content = [...chat.imgs.map(x => ({type:'image', source:{type:'base64', media_type:x.media, data:x.data}})), ...previo];
+    c[i].content = [...chat.imgs.map(x => x.media === 'application/pdf'
+      ? {type:'document', source:{type:'base64', media_type:'application/pdf', data:x.data}}
+      : {type:'image', source:{type:'base64', media_type:x.media, data:x.data}}), ...previo];
     break;
   }
   return c;
@@ -2672,7 +2677,7 @@ async function marcarEnCaptura(){
     });
   });
 }
-const miniaturas = imgs => imgs && imgs.length ? `<div class="miniaturas">${imgs.map(i => `<img src="${i.url}" alt="imagen del área marcada">`).join('')}</div>` : '';
+const miniaturas = imgs => imgs && imgs.length ? `<div class="miniaturas">${imgs.map(i => i.media === 'application/pdf' ? `<span class="pdf">📄 ${esc(i.nombre || 'documento.pdf')}${i.paginas ? ` · ${i.paginas} pág.` : ''}</span>` : `<img src="${i.url}" alt="imagen del área marcada">`).join('')}</div>` : '';
 
 /* ---------- MARCAR ÁREA: arrastrás un recuadro en la página del ejercicio ---------- */
 let esperaArea = null, avisoArea = null;
@@ -2782,6 +2787,15 @@ $('#o-captura').onclick = activarCaptura;
 /* ---------- PANTALLAZOS: pegar (Ctrl + V), subir (📎) o arrastrar imágenes al asistente ---------- */
 chat.adjuntos = [];
 const PEDIDO_IMAGEN = 'Resolvé lo que aparece en la imagen y dame las respuestas.';
+const PEDIDO_PDF = 'Leé el PDF, resolvé los ejercicios que trae y dame las respuestas.';
+const PDF_MAX = 20 * 1024 * 1024;
+const esPDF = f => f && (f.type === 'application/pdf' || /\.pdf$/i.test(f.name || ''));
+async function pdfDeArchivo(f){
+  const buf = new Uint8Array(await f.arrayBuffer());
+  let bin = ''; for(let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+  const paginas = (bin.match(/\/Type\s*\/Page(?![s\w])/g) || []).length;
+  return {media:'application/pdf', data:btoa(bin), nombre:f.name || 'documento.pdf', paginas, url:''};
+}
 async function imagenDeArchivo(f){
   const bmp = await createImageBitmap(f);
   return recorte(bmp, 0, 0, bmp.width, bmp.height);
@@ -2789,14 +2803,24 @@ async function imagenDeArchivo(f){
 function pintarAdjuntos(){
   const box = $('#o-adjuntos'); if(!box) return;
   box.hidden = !chat.adjuntos.length;
-  box.innerHTML = chat.adjuntos.map((a, k) => `<div class="adj"><img src="${a.url}" alt="imagen adjunta ${k + 1}"><button data-k="${k}" title="Quitar esta imagen">✕</button></div>`).join('');
+  box.innerHTML = chat.adjuntos.map((a, k) => `<div class="adj">${a.media === 'application/pdf' ? `<span class="pdf">📄 ${esc(a.nombre)}${a.paginas ? ` · ${a.paginas} pág.` : ''}</span>` : `<img src="${a.url}" alt="imagen adjunta ${k + 1}">`}<button data-k="${k}" title="Quitar">✕</button></div>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => { chat.adjuntos.splice(Number(b.dataset.k), 1); pintarAdjuntos(); });
 }
 async function adjuntarArchivos(lista){
-  const imgs = [...lista].filter(f => f && /^image\//.test(f.type));
+  const imgs = [...lista].filter(f => f && (/^image\//.test(f.type) || esPDF(f)));
   if(!imgs.length) return false;
   for(const f of imgs){
-    if(chat.adjuntos.length >= 4){ burbuja('err', 'Se pueden mandar hasta 4 imágenes por mensaje.'); break; }
+    if(chat.adjuntos.length >= 4){ burbuja('err', 'Se pueden mandar hasta 4 archivos por mensaje.'); break; }
+    if(esPDF(f)){
+      if(f.size > PDF_MAX){ burbuja('err', esc(`El PDF «${f.name}» pesa ${(f.size / 1048576).toFixed(1)} MB: el máximo es 20 MB. Mandá solo las páginas del ejercicio (en el visor de PDF: Imprimir → Guardar como PDF → elegí las páginas).`)); continue; }
+      try{
+        const d = await pdfDeArchivo(f); chat.adjuntos.push(d);
+        if(d.paginas > 100) burbuja('err', esc(`El PDF tiene ${d.paginas} páginas y Claude lee hasta 100. Mandá solo las páginas del ejercicio.`));
+        else if(d.paginas > 20) burbuja('paso', esc(`📄 El PDF tiene ${d.paginas} páginas: Claude lo puede leer, pero gasta bastante crédito. Si solo necesitás un ejercicio, mandá esas páginas.`));
+        if(!esClaude()) burbuja('paso', 'Los PDF los lee solo Claude. Escribí «usá Claude» (o cambialo arriba) antes de enviar.');
+      }catch(e){ burbuja('err', 'No pude leer ese PDF: ' + esc(e.message)); }
+      continue;
+    }
     try{ const im = await imagenDeArchivo(f); if(im) chat.adjuntos.push(im); }catch(e){ burbuja('err', 'No pude leer esa imagen: ' + esc(e.message)); }
   }
   pintarAdjuntos();
@@ -2805,7 +2829,7 @@ async function adjuntarArchivos(lista){
 }
 $('#asistente').addEventListener('paste', async e => {
   const fs = [...(e.clipboardData ? e.clipboardData.items : [])].filter(i => i.kind === 'file').map(i => i.getAsFile());
-  if(fs.some(f => f && /^image\//.test(f.type))){ e.preventDefault(); await adjuntarArchivos(fs); }
+  if(fs.some(f => f && (/^image\//.test(f.type) || esPDF(f)))){ e.preventDefault(); await adjuntarArchivos(fs); }
 });
 $('#asistente').addEventListener('dragover', e => { if([...(e.dataTransfer ? e.dataTransfer.items : [])].some(i => i.kind === 'file')){ e.preventDefault(); $('#asistente').classList.add('soltando'); } });
 $('#asistente').addEventListener('dragleave', e => { if(e.target === $('#asistente')) $('#asistente').classList.remove('soltando'); });
@@ -2900,13 +2924,18 @@ async function enviarMensaje(){
     txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
     if(!chat.control){ soltarMarcado(false); $('#o-msg').placeholder = 'Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)'; }
   }
-  if(!txt && chat.adjuntos.length && !chat.control) txt = PEDIDO_IMAGEN;
+  if(!chat.control && chat.adjuntos.some(a => a.media === 'application/pdf') && !esClaude()){
+    burbuja('err', 'El modelo local no puede leer PDF. Escribí «usá Claude» (o cambialo arriba en «Usar») y volvé a enviar: el PDF queda adjunto.');
+    return;
+  }
+  if(!txt && chat.adjuntos.length && !chat.control) txt = chat.adjuntos.some(a => a.media === 'application/pdf') ? PEDIDO_PDF : PEDIDO_IMAGEN;
   if(!txt || chat.control) return;
   $('#o-msg').value = '';
   const inicio = chat.historial.length;
   let errorFinal = '';
   chat.turno = (chat.turno || 0) + 1;
   chat.imgs = [...(chat.imagenesPend || []), ...chat.adjuntos].slice(0, 4); chat.imagenesPend = null;
+  { const pdfs = chat.adjuntos.filter(a => a.media === 'application/pdf'); if(pdfs.length && !chat.control) chat.ultimoEjercicio = pdfs.map(a => '(PDF) ' + a.nombre).join(', ') + (txt && txt !== PEDIDO_PDF ? ' · ' + txt : ''); }
   if(chat.adjuntos.length){ chat.adjuntos = []; pintarAdjuntos(); $('#o-msg').placeholder = 'Escribí tu pregunta o pegá un pantallazo con Ctrl + V… (Enter envía, Shift + Enter hace salto de línea)'; }
   burbuja('yo', esc(txt) + miniaturas(chat.imgs));
   const em = $('#o-mini-estado'); if(em) em.textContent = '⏳ resolviendo…';
