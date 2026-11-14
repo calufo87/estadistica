@@ -433,10 +433,12 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.11';
+const VERSION = '5.13';
 const VERSION_FECHA = '14 nov 2026';
-const VERSION_FAVORITO = 7;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 8;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.13 · Cada caso se numera y muestra el comienzo del enunciado; al empezar otro caso se limpian las respuestas anteriores y las nuevas se iluminan (favorito versión 8)',
+  '5.12 · Si el favorito es viejo, el recuadro de respuestas avisa que hay que instalar el nuevo; ya no muestra «Ítem 0»',
   '5.11 · El recuadro de la página del ejercicio también conversa con el modelo: preguntar, «¿Por qué?», enviar lo seleccionado, marcar área y elegir Claude o modelo local (favorito versión 7)',
   '5.10 · Arreglo: las respuestas vuelven a llegar a las casillas aunque superCharlie se haya abierto desde otra página; al marcar un área busca las casillas también fuera del recuadro (favorito versión 6)',
   '5.9 · Las casillas ya no se achican cuando el texto es largo',
@@ -2202,20 +2204,22 @@ window.addEventListener('message', e => {
 });
 function itemDelTexto(t){
   const m = String(t || '').match(/^\s*(\d{1,3})\s*[.)\-–:]\s/) || String(t || '').match(/(?:ejercicio|pregunta|[íi]tem|problema|reactivo)\s*#?\s*(\d{1,3})/i);
-  return m ? m[1] : '';
+  return m && Number(m[1]) > 0 ? m[1] : '';
 }
 function entregarRespuestas(a){
+  if(chat.casoTurno !== chat.turno){ chat.caso = (chat.caso || 0) + 1; chat.casoTurno = chat.turno; }
   const filas = (Array.isArray(a.respuestas) ? a.respuestas : []).filter(r => r && !vacio(r.respuesta));
   if(!filas.length) throw new Error('No mandaste ninguna respuesta.');
   const conectado = !!origenWin();
-  let h = `<div class="rt-tit">📋 Respuestas${chat.item ? ' · Ítem ' + esc(chat.item) : ''}</div><ol class="lista-resp">` + filas.map((r, k) =>
+  let h = `<div class="rt-tit">📋 Caso ${chat.caso} · Respuestas${chat.item ? ' · Ítem ' + esc(chat.item) : ''}</div>${chat.ultimoEjercicio ? `<div class="hint">📝 «${esc(String(chat.ultimoEjercicio).replace(/\s+/g, ' ').trim().slice(0, 140))}»</div>` : ''}<ol class="lista-resp">` + filas.map((r, k) =>
     `<li><span class="lr-p">Pregunta ${k + 1}${r.pregunta ? ' · ' + esc(r.pregunta) : ''}</span><span class="lr-v">${esc(String(r.respuesta))}</span>${r.campo && conectado ? `<button class="lr-pasar" data-k="${k}">Pasar ➜</button>` : ''}</li>`).join('') + '</ol>';
   let msg = `Le mostré al estudiante ${filas.length} respuesta(s).`;
   const conCampo = filas.filter(r => r.campo);
   if(conCampo.length){
     if(origenWin()){
       try{
-        origenWin().postMessage({tipo:'sc-respuestas', token:chat.origen.token, prov:cfgIA.proveedor, resumen:a.resumen || '',
+        const avisoFav = (chat.origen.fv || 1) < VERSION_FAVORITO ? `⚠ Este recuadro es del favorito viejo (versión ${chat.origen.fv || 1}). Para preguntarle al modelo, elegir Claude o el modelo local y analizar el siguiente caso desde aquí, instalá el favorito nuevo (versión ${VERSION_FAVORITO}) desde superCharlie → Ajustes → «Enviar ejercicios desde otras páginas». ` : '';
+        origenWin().postMessage({tipo:'sc-respuestas', token:chat.origen.token, prov:cfgIA.proveedor, caso:chat.caso, ejercicio:String(chat.ultimoEjercicio || '').slice(0, 300), resumen:avisoFav + (a.resumen || ''),
           respuestas:filas.map(r => ({campo:r.campo || null, pregunta:r.pregunta || '', valor:String(r.respuesta)}))}, '*');
         h += `<p class="hint">📨 También te las dejé en un panel en «${esc(chat.origen.titulo)}». Pasá solo las que quieras: con «Pasar ➜» aquí o con «Pasar» en esa pestaña.</p>`;
         msg += ` Mandé ${conCampo.length} a las casillas de la página de origen; el estudiante las revisa y confirma allá.`;
@@ -2842,7 +2846,7 @@ async function enviarMensaje(){
       txt = resto.trim(); $('#o-msg').value = txt;
     }
   }
-  if(!chat.control){ chat.ultimoEjercicio = marcado.texto || txt; if(!chat.origen) chat.item = itemDelTexto(marcado.texto || txt); }
+  if(!chat.control && !/^\s*¿Por qué la respuesta de «/.test(txt)){ chat.ultimoEjercicio = marcado.texto || txt; if(!chat.origen) chat.item = itemDelTexto(marcado.texto || txt); }
   if(marcado.texto){
     txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
     if(!chat.control){ soltarMarcado(false); $('#o-msg').placeholder = 'Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)'; }
@@ -2851,6 +2855,7 @@ async function enviarMensaje(){
   $('#o-msg').value = '';
   const inicio = chat.historial.length;
   let errorFinal = '';
+  chat.turno = (chat.turno || 0) + 1;
   chat.imgs = chat.imagenesPend || []; chat.imagenesPend = null;
   burbuja('yo', esc(txt) + miniaturas(chat.imgs));
   const em = $('#o-mini-estado'); if(em) em.textContent = '⏳ resolviendo…';
@@ -2962,7 +2967,7 @@ function marcadorOrigen(URLH, FV){
   /* sin texto marcado: solo conecta; el área se marca después desde el asistente */
   var limpio = function(x){ return String(x || '').replace(/\s+/g, ' ').trim(); };
   var norm = function(x){ return limpio(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
-  var visible = function(el){ var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
+  var visible = function(el){ if(el.closest && el.closest('#sc-panel,#sc-area')) return false; var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
   var SEL = 'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=file]):not([type=password]):not([type=image]):not([type=reset]):not([type=search]),textarea,select';
   var base = sel.rangeCount ? sel.getRangeAt(0).commonAncestorContainer : null;
   if(base && base.nodeType !== 1) base = base.parentElement;
@@ -2970,7 +2975,7 @@ function marcadorOrigen(URLH, FV){
   /* ---- número de ítem del ejercicio marcado ---- */
   var RX = /(?:ejercicio|pregunta|[íi]tem|problema|reactivo|n[º°o]\.?)\s*#?\s*(\d{1,3})/i;
   var detectarItem = function(){
-    var m = t.match(/^\s*(\d{1,3})\s*[.)\-–:]\s/) || t.match(RX); if(m) return m[1];
+    var m = t.match(/^\s*(\d{1,3})\s*[.)\-–:]\s/) || t.match(RX); if(m && Number(m[1]) > 0) return m[1];
     var el = base;
     for(var i = 0; i < 7 && el && el !== document.documentElement; i++){
       if(el.tagName === 'LI' && el.parentElement && el.parentElement.tagName === 'OL') return String([].indexOf.call(el.parentElement.children, el) + 1);
@@ -3071,6 +3076,7 @@ function marcadorOrigen(URLH, FV){
   };
   /* ---- marcar un área: recuadro que se arrastra; se manda el texto, las casillas y las imágenes que quedan adentro ---- */
   var procesarArea = function(r, textoExacto){
+    if(window.__scNuevoCaso) window.__scNuevoCaso();
     var corta = function(b){ return b.width > 0 && b.height > 0 && b.right > r.x && b.left < r.x + r.w && b.bottom > r.y && b.top < r.y + r.h; };
     var bloque = function(el){ for(var i = 0; i < 8 && el && el !== document.body; i++){ if(!/^inline/.test(getComputedStyle(el).display)) return el; el = el.parentElement; } return el; };
     var partes = [], ultimo = null, primero = null, nd, rg = document.createRange();
@@ -3158,6 +3164,10 @@ function marcadorOrigen(URLH, FV){
       window.__scSel = {texto:String(s).trim(), rect:{x:r.left, y:r.top, w:r.width, h:r.height}};
     });
   }
+  window.__scNuevoCaso = function(){
+    window.__scTextoModelo = '⏳ Analizando el caso siguiente…';
+    window.__scPanel({respuestas:[], esperando:true});
+  };
   window.__scPanel = function(d){
     d = d || {respuestas:[]};
     window.__scResp = d;
@@ -3167,9 +3177,12 @@ function marcadorOrigen(URLH, FV){
     var esc2 = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
     var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#0b57d0;color:#fff' : 'border:1px solid #c4c7c5;background:#fff;color:#1f1f1f') + '">' + txt + '</button>'; };
     var resp = d.respuestas || [];
-    var h = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><b style="flex:1;font-size:15px;color:#0b57d0">' + (resp.length ? '📥 Respuestas' : '🤖 superCharlie') + (window.__scItem && resp.length ? ' · Ítem ' + esc2(window.__scItem) : '') + '</b>' +
+    var nuevo = !!(resp.length && d.caso && d.caso !== window.__scUltCaso);
+    var h = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><b style="flex:1;font-size:15px;color:#0b57d0">' + (resp.length ? '📥 ' + (d.caso ? 'Caso ' + d.caso + ' · ' : '') + 'Respuestas' : d.esperando ? '⏳ Caso nuevo' : '🤖 superCharlie') + (window.__scItem && resp.length ? ' · Ítem ' + esc2(window.__scItem) : '') +
+      (nuevo ? ' <span data-nuevo style="font-size:11.5px;color:#fff;background:#146c2e;border-radius:999px;padding:1px 7px;vertical-align:middle">✨ nuevo</span>' : '') + '</b>' +
       '<select data-prov style="font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #c4c7c5;border-radius:7px;background:#fff;color:#1f1f1f"><option value="claude">Claude</option><option value="ollama">Modelo local</option></select>' +
       btn('minimizar', '', '▁') + btn('cerrar', '', '✕') + '</div><div data-cuerpo>';
+    if(d.ejercicio && resp.length) h += '<div style="font-size:12.5px;color:#474747;background:#f0f4f9;border-radius:6px;padding:4px 8px;margin-bottom:6px">📝 «' + esc2(limpio(d.ejercicio).slice(0, 160)) + (limpio(d.ejercicio).length > 160 ? '…' : '') + '»</div>';
     if(d.resumen) h += '<div style="color:#474747;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
     if(resp.length) h += '<div style="color:#474747;font-size:12.5px;margin-bottom:6px">Pasá solo las que querés: <b>Pasar</b>, o <b>Elegir casilla…</b> y después clic en la casilla donde va. <b>¿Por qué?</b> le pregunta al modelo.</div>';
     resp.forEach(function(r, k){
@@ -3187,6 +3200,11 @@ function marcadorOrigen(URLH, FV){
     h += '<div style="margin-top:10px;border-top:1px solid #e3e3e3;padding-top:8px"><textarea data-preg rows="2" placeholder="Preguntale al modelo… (Enter envía)" style="width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid #c4c7c5;border-radius:8px;resize:vertical;background:#fff;color:#1f1f1f"></textarea>' +
       '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">' + btn('preguntar', '', '💬 Enviar al modelo', true) + btn('seleccion', '', '✉ Enviar lo que seleccioné') + btn('area', '', '🔲 Marcar área') + '</div></div></div>';
     p.innerHTML = h; document.body.appendChild(p);
+    if(nuevo){
+      window.__scUltCaso = d.caso;
+      try{ p.animate([{boxShadow:'0 0 0 5px #146c2e'}, {boxShadow:'0 0 0 5px #146c2e', offset:.4}, {boxShadow:'0 8px 28px rgba(0,0,0,.22)'}], {duration:1800}); }catch(e){}
+      setTimeout(function(){ var b = p.querySelector('[data-nuevo]'); if(b) b.remove(); }, 6000);
+    }
     var aviso = p.querySelector('[data-aviso]'), cajaModelo = p.querySelector('[data-modelo]'), preg = p.querySelector('[data-preg]'), prov = p.querySelector('[data-prov]');
     prov.value = window.__scProv || 'claude';
     var mostrarModelo = function(){
@@ -3294,15 +3312,15 @@ function recibirDeOtraPagina(){
   history.replaceState(null, '', location.pathname + location.search);
   if(!texto){
     if(!p.get('token') || !(saludos[p.get('token')] || window.opener)) return;
-    chat.item = ''; chat.origen = {token:p.get('token'), campos:[], titulo:de, item:'', win:saludos[p.get('token')] || null};
+    chat.item = ''; chat.origen = {token:p.get('token'), campos:[], titulo:de, item:'', win:saludos[p.get('token')] || null, fv:Number(p.get('fv')) || 1};
     abrirChat();
     if(favViejo) burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior y no sabe marcar áreas. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes (versión ${VERSION_FAVORITO}).`));
     burbuja('paso', esc(`🔗 Conectado con «${de}». Tocá ⧉ para sacar el asistente a una ventana flotante, volvé a esa página y tocá «🔲 Marcar área» para elegir el ejercicio.`));
     return;
   }
-  const item = (p.get('item') || '').trim();
+  const item = (p.get('item') || '').trim().replace(/^0+$/, '');
   chat.item = item || itemDelTexto(texto);
-  chat.origen = (p.get('token') && (saludos[p.get('token')] || window.opener)) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de, item:chat.item, win:saludos[p.get('token')] || null} : null;
+  chat.origen = (p.get('token') && (saludos[p.get('token')] || window.opener)) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de, item:chat.item, win:saludos[p.get('token')] || null, fv:Number(p.get('fv')) || 1} : null;
   if(favViejo){
     abrirChat();
     burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior${(Number(p.get('fv')) || 1) < 2 ? ': manda el texto, pero no recibe las respuestas de vuelta' : ': le faltan las mejoras nuevas del panel de respuestas'}. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes → «Enviar ejercicios desde otras páginas» (versión ${VERSION}).`));
