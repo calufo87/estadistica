@@ -33,7 +33,8 @@ h3{font-size:15px;margin:22px 0 8px}
 label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--muted);font-weight:500}
 label.check{flex-direction:row;align-items:center;gap:8px;color:var(--ink)}
 input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:0;width:100%}
-input[type=checkbox]{width:auto}
+input[type=checkbox],input[type=radio]{width:auto;flex:none;width:16px;height:16px;margin:2px 0 0;align-self:flex-start}
+label.check{align-items:flex-start}
 input[type=file]{padding:6px}
 textarea{resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px}
 input:focus,select:focus,textarea:focus{outline:2px solid var(--acc);outline-offset:-1px}
@@ -406,7 +407,7 @@ body.flotante.mini .drawer-top h2{font-size:14px}
   </details>
   <p id="o-estado" class="estado"></p>
   <label class="check" id="o-agente-l" hidden><input type="checkbox" id="o-agente" checked> Modo agente: Claude mira toda la página, la maneja paso a paso y te señala la respuesta</label>
-  <label class="check"><input type="checkbox" id="o-acciones"> Usar la página para calcular (llena los campos y la página hace las cuentas). Si está apagada, el asistente lee, analiza y te da las respuestas sin tocar la página.</label>
+  <label class="check" title="Si está apagada, el asistente lee, analiza y te da las respuestas sin tocar superCharlie."><input type="checkbox" id="o-acciones"> Usar superCharlie para calcular (llena los campos y hace las cuentas)</label>
   <label id="o-int-l">🎨 Intensidad del color <input id="o-int" type="range" min="0" max="100" step="5"></label>
   <label class="check"><input type="checkbox" id="o-contexto" checked> Enviarle los resultados que tengo en pantalla</label>
   <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (si no, solo lo resuelve)</label>
@@ -432,10 +433,13 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.8';
+const VERSION = '5.11';
 const VERSION_FECHA = '14 nov 2026';
-const VERSION_FAVORITO = 5;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 7;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.11 · El recuadro de la página del ejercicio también conversa con el modelo: preguntar, «¿Por qué?», enviar lo seleccionado, marcar área y elegir Claude o modelo local (favorito versión 7)',
+  '5.10 · Arreglo: las respuestas vuelven a llegar a las casillas aunque superCharlie se haya abierto desde otra página; al marcar un área busca las casillas también fuera del recuadro (favorito versión 6)',
+  '5.9 · Las casillas ya no se achican cuando el texto es largo',
   '5.8 · Control de intensidad del color (en Ajustes y en el asistente): de gris tranquilo a color completo',
   '5.7 · Colores como Chrome/Edge: grises neutros, azul del navegador (o el acento de Windows) y modo claro u oscuro igual que el navegador',
   '5.6 · Por defecto el asistente solo lee, analiza y da las respuestas, sin usar la página; la página calcula solo si activás «Usar la página para calcular»',
@@ -2168,6 +2172,34 @@ function describirPaso(nombre, a){
   if(nombre==='senalar_respuesta') return `👉 Te señalé en la página: ${a.texto}`;
   return describirAccion(nombre, a);
 }
+/* La página del ejercicio con la que estamos conectados: la que saludó con su token (o, si no, la que abrió esta pestaña) */
+function origenWin(){
+  if(!chat.origen) return null;
+  const w = chat.origen.win || window.opener;
+  return w && !w.closed ? w : null;
+}
+const saludos = {};
+const enviarAlOrigen = d => { const w = origenWin(); if(w) try{ w.postMessage({...d, token:chat.origen.token, prov:cfgIA.proveedor}, '*'); }catch(e){} };
+window.addEventListener('message', e => {
+  const d = e.data; if(!d || !chat.origen || d.token !== chat.origen.token) return;
+  if(d.tipo === 'sc-proveedor'){
+    chat.origen.win = e.source;
+    if(d.valor === 'claude' || d.valor === 'ollama'){ const msg = cambiarProveedor(d.valor); burbuja('paso', esc('Desde «' + chat.origen.titulo + '»: ' + msg)); enviarAlOrigen({tipo:'sc-proveedor-ok', prov:cfgIA.proveedor}); }
+  }
+  if(d.tipo === 'sc-pregunta'){
+    chat.origen.win = e.source;
+    const t = String(d.texto || '').trim(); if(!t) return;
+    if(chat.control){ enviarAlOrigen({tipo:'sc-texto', texto:'⚠ Todavía estoy respondiendo lo anterior. Probá de nuevo en un momento.'}); return; }
+    chat.respDesdeOrigen = true;
+    $('#o-msg').value = t; enviarMensaje();
+  }
+});
+window.addEventListener('message', e => {
+  const d = e.data; if(!d || d.tipo !== 'sc-hola' || typeof d.token !== 'string') return;
+  saludos[d.token] = e.source;
+  if(chat.origen && chat.origen.token === d.token) chat.origen.win = e.source;
+  try{ e.source.postMessage({tipo:'sc-hola-ok', token:d.token, prov:cfgIA.proveedor}, e.origin); }catch(x){}
+});
 function itemDelTexto(t){
   const m = String(t || '').match(/^\s*(\d{1,3})\s*[.)\-–:]\s/) || String(t || '').match(/(?:ejercicio|pregunta|[íi]tem|problema|reactivo)\s*#?\s*(\d{1,3})/i);
   return m ? m[1] : '';
@@ -2175,15 +2207,15 @@ function itemDelTexto(t){
 function entregarRespuestas(a){
   const filas = (Array.isArray(a.respuestas) ? a.respuestas : []).filter(r => r && !vacio(r.respuesta));
   if(!filas.length) throw new Error('No mandaste ninguna respuesta.');
-  const conectado = !!(chat.origen && window.opener && !window.opener.closed);
+  const conectado = !!origenWin();
   let h = `<div class="rt-tit">📋 Respuestas${chat.item ? ' · Ítem ' + esc(chat.item) : ''}</div><ol class="lista-resp">` + filas.map((r, k) =>
     `<li><span class="lr-p">Pregunta ${k + 1}${r.pregunta ? ' · ' + esc(r.pregunta) : ''}</span><span class="lr-v">${esc(String(r.respuesta))}</span>${r.campo && conectado ? `<button class="lr-pasar" data-k="${k}">Pasar ➜</button>` : ''}</li>`).join('') + '</ol>';
   let msg = `Le mostré al estudiante ${filas.length} respuesta(s).`;
   const conCampo = filas.filter(r => r.campo);
   if(conCampo.length){
-    if(chat.origen && window.opener && !window.opener.closed){
+    if(origenWin()){
       try{
-        window.opener.postMessage({tipo:'sc-respuestas', token:chat.origen.token, resumen:a.resumen || '',
+        origenWin().postMessage({tipo:'sc-respuestas', token:chat.origen.token, prov:cfgIA.proveedor, resumen:a.resumen || '',
           respuestas:filas.map(r => ({campo:r.campo || null, pregunta:r.pregunta || '', valor:String(r.respuesta)}))}, '*');
         h += `<p class="hint">📨 También te las dejé en un panel en «${esc(chat.origen.titulo)}». Pasá solo las que quieras: con «Pasar ➜» aquí o con «Pasar» en esa pestaña.</p>`;
         msg += ` Mandé ${conCampo.length} a las casillas de la página de origen; el estudiante las revisa y confirma allá.`;
@@ -2202,7 +2234,7 @@ function entregarRespuestas(a){
 }
 const botonesPasar = {};
 window.addEventListener('message', e => {
-  const d = e.data; if(!d || d.tipo !== 'sc-pasada' || e.source !== window.opener) return;
+  const d = e.data; if(!d || d.tipo !== 'sc-pasada' || !origenWin() || e.source !== origenWin()) return;
   const b = botonesPasar[d.k]; if(!b) return;
   b.disabled = false; b.textContent = d.err ? '⚠ ' + d.err : '✓ Pasada'; b.classList.toggle('pasada', !d.err);
 });
@@ -2214,10 +2246,10 @@ function mostrarRespuestasPendientes(){
   div.querySelectorAll('.lista-resp li').forEach((li, k) => { li.title = 'Clic para copiar esta respuesta'; li.onclick = e => { if(e.target.closest('button')) return; copiar(String(rp.filas[k].respuesta), li.querySelector('.lr-v')); }; });
   div.querySelectorAll('.lr-pasar').forEach(b => b.onclick = () => {
     const k = Number(b.dataset.k), r = rp.filas[k];
-    if(!chat.origen || !window.opener || window.opener.closed){ b.textContent = '⚠ sin conexión'; return; }
+    if(!origenWin()){ b.textContent = '⚠ sin conexión'; return; }
     b.disabled = true; b.textContent = 'Pasando…';
     botonesPasar[k] = b;
-    window.opener.postMessage({tipo:'sc-pasar', token:chat.origen.token, k, respuesta:{campo:r.campo, valor:String(r.respuesta)}}, '*');
+    origenWin().postMessage({tipo:'sc-pasar', token:chat.origen.token, k, respuesta:{campo:r.campo, valor:String(r.respuesta)}}, '*');
     setTimeout(() => { if(b.textContent === 'Pasando…'){ b.disabled = false; b.textContent = '⚠ no respondió · reintentar'; } }, 3000);
   });
   agregarAlArchivo(rp.registro, div.querySelector('.estado-archivo'));
@@ -2628,11 +2660,11 @@ const miniaturas = imgs => imgs && imgs.length ? `<div class="miniaturas">${imgs
 /* ---------- MARCAR ÁREA: arrastrás un recuadro en la página del ejercicio ---------- */
 let esperaArea = null, avisoArea = null;
 async function marcarArea(){
-  const conectado = !!(chat.origen && window.opener && !window.opener.closed);
+  const conectado = !!origenWin();
   if(chat.control){ restaurarMini(); burbuja('err', 'Esperá a que termine la respuesta actual (o tocá «Detener»).'); return; }
   if(conectado){
-    window.opener.postMessage({tipo:'sc-marcar-area', token:chat.origen.token}, '*');
-    try{ window.opener.focus(); }catch(e){}
+    origenWin().postMessage({tipo:'sc-marcar-area', token:chat.origen.token}, '*');
+    try{ origenWin().focus(); }catch(e){}
     if(avisoArea) avisoArea.remove();
     avisoArea = burbuja('paso', `🔲 Andá a «${esc(chat.origen.titulo)}» y arrastrá un recuadro sobre el ejercicio (Esc cancela).`);
     const e = $('#o-mini-estado'); if(e) e.textContent = '🔲 marcá el área…';
@@ -2654,16 +2686,16 @@ async function marcarArea(){
 async function recibirArea(d){
   clearTimeout(esperaArea);
   if(avisoArea){ avisoArea.remove(); avisoArea = null; }
-  if(d.cancelado){ burbuja('paso', 'Cancelaste el área.'); const e = $('#o-mini-estado'); if(e) e.textContent = ''; return; }
+  if(d.cancelado){ enviarAlOrigen({tipo:'sc-texto', texto:''}); burbuja('paso', 'Cancelaste el área.'); const e = $('#o-mini-estado'); if(e) e.textContent = ''; return; }
   chat.origen.campos = Array.isArray(d.campos) ? d.campos : [];
   chat.item = d.item || itemDelTexto(d.texto || ''); chat.origen.item = chat.item;
   let imgs = [], aviso = '';
   if(captura.stream){ try{ const r = await recortarArea(d); if(r.img) imgs.push(r.img); aviso = r.aviso; }catch(e){ aviso = 'No pude recortar la pantalla: ' + e.message; } }
   if(!imgs.length) imgs = (d.imagenes || []).slice(0, 4).map(u => ({media:(u.match(/^data:([^;]+)/) || [,'image/jpeg'])[1], data:u.split(',')[1], url:u}));
   const texto = String(d.texto || '').trim();
-  if(!texto && !imgs.length){ burbuja('err', 'No encontré texto ni imágenes dentro del área. Si el ejercicio es una imagen o un PDF, tocá «📷 Ver imágenes» y marcá el área de nuevo.'); return; }
+  if(!texto && !imgs.length){ enviarAlOrigen({tipo:'sc-texto', texto:'⚠ No encontré texto ni imágenes dentro del área. Si el ejercicio es una imagen o un PDF, activá «📷 Ver imágenes» en el asistente y marcá de nuevo.'}); burbuja('err', 'No encontré texto ni imágenes dentro del área. Si el ejercicio es una imagen o un PDF, tocá «📷 Ver imágenes» y marcá el área de nuevo.'); return; }
   if(aviso) burbuja('err', esc(aviso));
-  chat.imagenesPend = imgs;
+  chat.imagenesPend = imgs; chat.respDesdeOrigen = true;
   const nc = chat.origen.campos.length;
   burbuja('paso', esc(`🔲 Área marcada${chat.item ? ` · Ítem ${chat.item}` : ''}: ${texto ? texto.length + ' caracteres de texto' : 'sin texto'}, ${imgs.length} imagen(es) y ${nc} casilla(s) de respuesta.`) +
     (imgs.length || captura.stream ? '' : '<br><span class="hint">Si el área tenía fórmulas, tablas en imagen o un PDF, tocá «📷 Ver imágenes» para que también las vea.</span>') + miniaturas(imgs));
@@ -2673,7 +2705,8 @@ async function recibirArea(d){
 }
 window.addEventListener('message', e => {
   const d = e.data;
-  if(!d || !chat.origen || e.source !== window.opener || d.token !== chat.origen.token) return;
+  if(!d || !chat.origen || d.token !== chat.origen.token || (d.tipo !== 'sc-area' && d.tipo !== 'sc-area-iniciada')) return;
+  chat.origen.win = e.source;
   if(d.tipo === 'sc-area-iniciada'){ clearTimeout(esperaArea); return; }
   if(d.tipo === 'sc-area') recibirArea(d);
 });
@@ -2702,7 +2735,7 @@ ${lista}`;
 /* Muestra en el asistente las respuestas válidas, con «Pasar ➜» para llenarlas, marcarlas o seleccionarlas en la otra página */
 async function respuestasFinales(txt, resultados, contenido, soloModelo){
   if(esClaude()) return;
-  const campos = (chat.origen && window.opener && !window.opener.closed) ? chat.origen.campos : [];
+  const campos = origenWin() ? chat.origen.campos : [];
   let filas = [];
   if(campos.length){
     const aviso = burbuja('paso', 'Armando las respuestas para las casillas…');
@@ -2817,6 +2850,7 @@ async function enviarMensaje(){
   if(!txt || chat.control) return;
   $('#o-msg').value = '';
   const inicio = chat.historial.length;
+  let errorFinal = '';
   chat.imgs = chat.imagenesPend || []; chat.imagenesPend = null;
   burbuja('yo', esc(txt) + miniaturas(chat.imgs));
   const em = $('#o-mini-estado'); if(em) em.textContent = '⏳ resolviendo…';
@@ -2898,11 +2932,17 @@ async function enviarMensaje(){
     chat.historial.push({role:'assistant', content:contenido});
     if(contenido.trim()) await respuestasFinales(txt, resultados, contenido, false);
   }catch(e){
+    errorFinal = e.name === 'AbortError' ? '(detenido)' : '⚠ ' + (e instanceof TypeError ? 'No me pude conectar con el modelo. Revisá el asistente.' : e.message);
     chat.historial.length = inicio;
     if(e.name==='AbortError'){ if(div) div.insertAdjacentHTML('beforeend','<p class="hint">(detenido)</p>'); }
     else { if(div) div.remove(); $$('#chat .msg.ia').forEach(d => { if(/Leyendo el ejercicio/.test(d.textContent)) d.remove(); }); burbuja('err', esc(e instanceof TypeError ? ayudaConexion() : e.message)); }
   }finally{
     chat.control = null; chat.imgs = null; $('#o-enviar').disabled = false; $('#o-parar').hidden = true;
+    if(chat.respDesdeOrigen){
+      chat.respDesdeOrigen = false;
+      const ult = chat.historial.length > inicio ? chat.historial[chat.historial.length - 1] : null;
+      enviarAlOrigen({tipo:'sc-texto', texto:errorFinal || (ult && ult.role === 'assistant' ? ult.content : '')});
+    }
     const em2 = $('#o-mini-estado'); if(em2 && /resolviendo/.test(em2.textContent)) em2.textContent = '💬 respuesta lista';
     if(!esClaude()) refrescarEnMemoria();
   }
@@ -3021,6 +3061,7 @@ function marcadorOrigen(URLH, FV){
     return '';
   };
   var token = Math.random().toString(36).slice(2);
+  window.__scResp = null; window.__scTextoModelo = '';
   window.__scToken = token; window.__scMapa = mapa; window.__scCampos = campos; window.__scItem = item;
   window.__scEscribir = function(r){ return escribirEn(window.__scMapa[r.campo], r.valor); };
   var origenH = new URL(URLH).origin;
@@ -3029,7 +3070,7 @@ function marcadorOrigen(URLH, FV){
     try{ window.__scHerr.postMessage(d, origenH); }catch(e){ alert('Se perdió la conexión con superCharlie. Volvé a tocar el favorito «Enviar a mi herramienta».'); }
   };
   /* ---- marcar un área: recuadro que se arrastra; se manda el texto, las casillas y las imágenes que quedan adentro ---- */
-  var procesarArea = function(r){
+  var procesarArea = function(r, textoExacto){
     var corta = function(b){ return b.width > 0 && b.height > 0 && b.right > r.x && b.left < r.x + r.w && b.bottom > r.y && b.top < r.y + r.h; };
     var bloque = function(el){ for(var i = 0; i < 8 && el && el !== document.body; i++){ if(!/^inline/.test(getComputedStyle(el).display)) return el; el = el.parentElement; } return el; };
     var partes = [], ultimo = null, primero = null, nd, rg = document.createRange();
@@ -3048,7 +3089,7 @@ function marcadorOrigen(URLH, FV){
       ultimo = b;
     }
     [].forEach.call(document.querySelectorAll('img[alt]'), function(im){ if(im.alt.trim() && corta(im.getBoundingClientRect())) partes.push('\n[imagen: ' + im.alt.trim() + ']'); });
-    var texto = partes.join('').replace(/^\s+/, '').slice(0, 8000);
+    var texto = (textoExacto || partes.join('').replace(/^\s+/, '')).slice(0, 8000);
     /* casillas dentro del área (y las del mismo ítem en la hoja de respuestas) */
     campos.length = 0; vistos.length = 0; Object.keys(mapa).forEach(function(k){ delete mapa[k]; }); Object.keys(grupos).forEach(function(k){ delete grupos[k]; });
     t = texto; base = primero;
@@ -3057,10 +3098,11 @@ function marcadorOrigen(URLH, FV){
     item = detectarItem(); window.__scItem = item;
     agregarHoja();
     enArea.slice(0, 50).forEach(function(el){ agregar(el, false); });
-    if(!campos.length && base){
+    if(base){
       var cont2 = base;
-      for(var j = 0; j < 6 && cont2 && cont2 !== document.body; j++){ if([].some.call(cont2.querySelectorAll(SEL), visible)) break; cont2 = cont2.parentElement; }
-      if(cont2 && cont2 !== document.body) [].filter.call(cont2.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){ agregar(el, false); });
+      for(var j = 0; j < 10 && cont2 && cont2 !== document.body; j++){ if([].some.call(cont2.querySelectorAll(SEL), visible)) break; cont2 = cont2.parentElement; }
+      if(!cont2) cont2 = document.body;
+      [].filter.call(cont2.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){ agregar(el, false); });
     }
     /* imágenes de la misma página (las de otros sitios no se pueden copiar: para esas está «Ver imágenes») */
     var imagenes = [];
@@ -3104,34 +3146,63 @@ function marcadorOrigen(URLH, FV){
       requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(function(){ procesarArea(r); }, 120); }); });
     });
   };
-  /* ---- panel con las respuestas: cada una se pasa sola, con su botón ---- */
+  /* ---- panel en esta página: respuestas (Pasar / Elegir casilla / ¿Por qué?) y conversación con el modelo ---- */
+  var selGuardada = null;
+  if(!window.__scSelEscucha){
+    window.__scSelEscucha = true;
+    document.addEventListener('selectionchange', function(){
+      var s = getSelection(); if(!s || s.isCollapsed || !s.rangeCount) return;
+      var nodo = s.anchorNode; var el = nodo && (nodo.nodeType === 1 ? nodo : nodo.parentElement);
+      if(el && el.closest && el.closest('#sc-panel,#sc-area')) return;
+      var r = s.getRangeAt(0).getBoundingClientRect();
+      window.__scSel = {texto:String(s).trim(), rect:{x:r.left, y:r.top, w:r.width, h:r.height}};
+    });
+  }
   window.__scPanel = function(d){
+    d = d || {respuestas:[]};
+    window.__scResp = d;
     var viejo = document.getElementById('sc-panel'); if(viejo && viejo.__cerrar) viejo.__cerrar(); else if(viejo) viejo.remove();
     var p = document.createElement('div'); p.id = 'sc-panel';
-    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483647;width:390px;max-height:85vh;overflow:auto;background:#fff;color:#1c2230;border:2px solid #0b57d0;border-radius:12px;box-shadow:0 10px 30px rgba(0,0,0,.25);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
+    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483646;width:400px;max-height:88vh;overflow:auto;background:#fff;color:#1f1f1f;border:1px solid #c4c7c5;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.22);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
     var esc2 = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-    var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#0b57d0;color:#fff' : 'border:1px solid #cfcac0;background:#fff;color:#1c2230') + '">' + txt + '</button>'; };
-    var h = '<div style="font-weight:700;font-size:15px;color:#0b57d0;margin-bottom:4px">📥 Respuestas' + (window.__scItem ? ' · Ítem ' + esc2(window.__scItem) : '') + '</div>';
-    if(d.resumen) h += '<div style="color:#5d6574;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
-    h += '<div style="color:#5d6574;font-size:12.5px;margin-bottom:6px">Pasá solo las que querés: tocá <b>Pasar</b> en cada una, o <b>Elegir casilla…</b> y después hacé clic en la casilla donde va.</div>';
-    d.respuestas.forEach(function(r, k){
+    var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#0b57d0;color:#fff' : 'border:1px solid #c4c7c5;background:#fff;color:#1f1f1f') + '">' + txt + '</button>'; };
+    var resp = d.respuestas || [];
+    var h = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><b style="flex:1;font-size:15px;color:#0b57d0">' + (resp.length ? '📥 Respuestas' : '🤖 superCharlie') + (window.__scItem && resp.length ? ' · Ítem ' + esc2(window.__scItem) : '') + '</b>' +
+      '<select data-prov style="font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #c4c7c5;border-radius:7px;background:#fff;color:#1f1f1f"><option value="claude">Claude</option><option value="ollama">Modelo local</option></select>' +
+      btn('minimizar', '', '▁') + btn('cerrar', '', '✕') + '</div><div data-cuerpo>';
+    if(d.resumen) h += '<div style="color:#474747;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
+    if(resp.length) h += '<div style="color:#474747;font-size:12.5px;margin-bottom:6px">Pasá solo las que querés: <b>Pasar</b>, o <b>Elegir casilla…</b> y después clic en la casilla donde va. <b>¿Por qué?</b> le pregunta al modelo.</div>';
+    resp.forEach(function(r, k){
       var c = campos.filter(function(x){ return x.id === r.campo; })[0];
       var nombre = (r.pregunta || (c && (c.etiqueta || c.pregunta)) || ('Pregunta ' + (k + 1)));
       var mostrar = String(r.valor);
       if(c && c.opciones){ var op = c.opciones.filter(function(o){ return o.valor === mostrar; })[0]; if(op && op.texto) mostrar = op.texto; }
-      h += '<div style="padding:7px 0;border-top:1px solid #e3e0d8"><span style="color:#5d6574">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span>' +
+      h += '<div style="padding:7px 0;border-top:1px solid #e3e3e3"><span style="color:#474747">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span>' +
         (c && c.hoja ? ' <span style="font-size:11px;color:#0b57d0;border:1px solid #0b57d0;border-radius:999px;padding:0 6px">hoja de respuestas</span>' : '') +
         '<br><b style="font-size:15px">' + esc2(mostrar) + '</b> <span data-e="' + k + '" style="font-weight:600"></span>' +
-        '<div style="display:flex;gap:6px;margin-top:5px">' + (c ? btn('pasar', k, 'Pasar', true) : '<span style="color:#b4532a;font-size:12.5px;align-self:center">sin casilla detectada</span>') + btn('elegir', k, 'Elegir casilla…') + '</div></div>';
+        '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">' + (c ? btn('pasar', k, 'Pasar', true) : '<span style="color:#b3261e;font-size:12.5px;align-self:center">sin casilla detectada</span>') + btn('elegir', k, 'Elegir casilla…') + btn('porque', k, '¿Por qué?') + '</div></div>';
     });
     h += '<div data-aviso style="display:none;margin-top:8px;padding:7px 9px;border-radius:8px;background:#fff4e0;color:#8a5a00;font-size:13px"></div>';
-    h += '<div style="display:flex;gap:8px;margin-top:10px">' + btn('cerrar', '', 'Cerrar') + '</div>';
+    h += '<div data-modelo style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4f9;white-space:pre-wrap;max-height:220px;overflow:auto;font-size:13.5px"></div>';
+    h += '<div style="margin-top:10px;border-top:1px solid #e3e3e3;padding-top:8px"><textarea data-preg rows="2" placeholder="Preguntale al modelo… (Enter envía)" style="width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid #c4c7c5;border-radius:8px;resize:vertical;background:#fff;color:#1f1f1f"></textarea>' +
+      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">' + btn('preguntar', '', '💬 Enviar al modelo', true) + btn('seleccion', '', '✉ Enviar lo que seleccioné') + btn('area', '', '🔲 Marcar área') + '</div></div></div>';
     p.innerHTML = h; document.body.appendChild(p);
-    var aviso = p.querySelector('[data-aviso]');
+    var aviso = p.querySelector('[data-aviso]'), cajaModelo = p.querySelector('[data-modelo]'), preg = p.querySelector('[data-preg]'), prov = p.querySelector('[data-prov]');
+    prov.value = window.__scProv || 'claude';
+    var mostrarModelo = function(){
+      var t = window.__scTextoModelo;
+      if(!t){ cajaModelo.style.display = 'none'; return; }
+      cajaModelo.style.display = 'block'; cajaModelo.textContent = t; cajaModelo.scrollTop = cajaModelo.scrollHeight;
+    };
+    window.__scMostrarTexto = mostrarModelo; mostrarModelo();
+    var mandar = function(msg){
+      window.__scTextoModelo = '⏳ Se lo mandé al modelo (' + (prov.value === 'claude' ? 'Claude' : 'modelo local') + ')…'; mostrarModelo();
+      avisarHerr(msg);
+    };
     var marcar = function(k, err){
       var out = p.querySelector('[data-e="' + k + '"]'); if(!out) return;
-      out.textContent = err ? '⚠ ' + err : '✓ pasada'; out.style.color = err ? '#b4532a' : '#2f7d4f';
-      var b = p.querySelector('button[data-a="pasar"][data-k="' + k + '"]'); if(b && !err){ b.textContent = '✓ Pasada'; b.style.background = '#2f7d4f'; }
+      out.textContent = err ? '⚠ ' + err : '✓ pasada'; out.style.color = err ? '#b3261e' : '#146c2e';
+      var b = p.querySelector('button[data-a="pasar"][data-k="' + k + '"]'); if(b && !err){ b.textContent = '✓ Pasada'; b.style.background = '#146c2e'; }
     };
     window.__scMarcar = marcar;
     var esperando = null, tragarClick = false;
@@ -3142,7 +3213,7 @@ function marcadorOrigen(URLH, FV){
       e.preventDefault(); e.stopPropagation();
       var els = el.type === 'radio' && el.name ? [].slice.call(document.getElementsByName(el.name)) : [el];
       var k = esperando; esperando = null; aviso.style.display = 'none';
-      marcar(k, escribirEn(els, d.respuestas[k].valor));
+      marcar(k, escribirEn(els, resp[k].valor));
       tragarClick = true; setTimeout(function(){ tragarClick = false; }, 600);
     };
     var alClick = function(e){ if(tragarClick && !p.contains(e.target)){ e.preventDefault(); e.stopPropagation(); tragarClick = false; } };
@@ -3150,13 +3221,25 @@ function marcadorOrigen(URLH, FV){
     document.addEventListener('mousedown', alElegir, true);
     document.addEventListener('click', alClick, true);
     document.addEventListener('keydown', alTecla, true);
-    p.__cerrar = function(){ document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); window.__scMarcar = null; p.remove(); };
+    p.__cerrar = function(){ document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); window.__scMarcar = null; window.__scMostrarTexto = null; p.remove(); };
+    prov.addEventListener('change', function(){ window.__scProv = prov.value; avisarHerr({tipo:'sc-proveedor', valor:prov.value}); });
+    preg.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); p.querySelector('button[data-a="preguntar"]').click(); } });
     p.addEventListener('click', function(e){
       var b = e.target.closest('button'); if(!b) return;
       var a = b.dataset.a, k = b.dataset.k === '' ? null : Number(b.dataset.k);
       if(a === 'cerrar'){ p.__cerrar(); return; }
-      if(a === 'pasar'){ marcar(k, window.__scEscribir(d.respuestas[k])); return; }
-      if(a === 'elegir'){ esperando = k; aviso.style.display = 'block'; aviso.textContent = 'Ahora hacé clic en la casilla donde va «' + String(d.respuestas[k].valor) + '». (Esc para cancelar)'; return; }
+      if(a === 'minimizar'){ var cu = p.querySelector('[data-cuerpo]'); var oc = cu.style.display === 'none'; cu.style.display = oc ? '' : 'none'; b.textContent = oc ? '▁' : '▢'; p.style.width = oc ? '400px' : 'auto'; return; }
+      if(a === 'pasar'){ marcar(k, window.__scEscribir(resp[k])); return; }
+      if(a === 'elegir'){ esperando = k; aviso.style.display = 'block'; aviso.textContent = 'Ahora hacé clic en la casilla donde va «' + String(resp[k].valor) + '». (Esc para cancelar)'; return; }
+      if(a === 'porque'){ mandar({tipo:'sc-pregunta', texto:'¿Por qué la respuesta de «' + limpio(resp[k].pregunta || ('la pregunta ' + (k + 1))) + '» es ' + resp[k].valor + '? Explicámelo con palabras y los pasos.'}); return; }
+      if(a === 'preguntar'){ var q = preg.value.trim(); if(!q){ preg.focus(); return; } preg.value = ''; mandar({tipo:'sc-pregunta', texto:q}); return; }
+      if(a === 'seleccion'){
+        var s = window.__scSel;
+        if(!s || !s.texto){ aviso.style.display = 'block'; aviso.textContent = 'Primero marcá con el mouse el texto del ejercicio en la página y después tocá «Enviar lo que seleccioné».'; return; }
+        aviso.style.display = 'none'; window.__scSel = null; window.__scTextoModelo = '⏳ Leyendo lo que seleccionaste…'; mostrarModelo();
+        procesarArea({x:s.rect.x, y:s.rect.y, w:Math.max(8, s.rect.w), h:Math.max(8, s.rect.h)}, s.texto); return;
+      }
+      if(a === 'area'){ window.__scTextoModelo = ''; mostrarModelo(); window.__scArea(); return; }
     });
   };
   if(!window.__scEscuchando){
@@ -3165,8 +3248,12 @@ function marcadorOrigen(URLH, FV){
       var d = e.data;
       if(!d || d.token !== window.__scToken || e.origin !== window.__scOrigenH) return;
       window.__scHerr = e.source;
+      if(d.prov) window.__scProv = d.prov;
+      if(d.tipo === 'sc-hola-ok'){ if(window.__scSaludado !== d.token){ window.__scSaludado = d.token; if(!document.getElementById('sc-panel')) window.__scPanel(window.__scResp && window.__scResp.respuestas && window.__scResp.respuestas.length ? window.__scResp : null); else { var sp2 = document.querySelector('#sc-panel [data-prov]'); if(sp2) sp2.value = window.__scProv || 'claude'; } } return; }
       if(d.tipo === 'sc-marcar-area'){ try{ e.source.postMessage({tipo:'sc-area-iniciada', token:d.token}, e.origin); }catch(x){} if(window.__scArea) window.__scArea(); return; }
-      if(d.tipo === 'sc-respuestas') window.__scPanel(d);
+      if(d.tipo === 'sc-respuestas'){ var tm = window.__scTextoModelo; window.__scPanel(d); window.__scTextoModelo = tm; if(window.__scMostrarTexto) window.__scMostrarTexto(); }
+      if(d.tipo === 'sc-texto'){ window.__scTextoModelo = d.texto; if(!document.getElementById('sc-panel')) window.__scPanel(window.__scResp); if(window.__scMostrarTexto) window.__scMostrarTexto(); }
+      if(d.tipo === 'sc-proveedor-ok'){ var sp = document.querySelector('#sc-panel [data-prov]'); if(sp) sp.value = d.prov; }
       if(d.tipo === 'sc-pasar'){
         var err = window.__scEscribir(d.respuesta);
         if(window.__scMarcar && d.k !== undefined) window.__scMarcar(d.k, err);
@@ -3177,6 +3264,10 @@ function marcadorOrigen(URLH, FV){
   window.__scOrigenH = origenH;
   var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 15));
  window.__scHerr = window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&item=' + encodeURIComponent(item) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), 'superCharlie');
+  var intentos = 0, saludo = setInterval(function(){
+    if(++intentos > 60 || window.__scSaludado === token){ clearInterval(saludo); return; }
+    try{ window.__scHerr.postMessage({tipo:'sc-hola', token:token}, origenH); }catch(e){}
+  }, 250);
 }
 function codigoMarcador(){
   return 'javascript:' + encodeURIComponent('(' + marcadorOrigen.toString().replace(/^\s+/gm, '') + ')(' + JSON.stringify(URL_HERRAMIENTA) + ',' + VERSION_FAVORITO + ');void 0');
@@ -3202,8 +3293,8 @@ function recibirDeOtraPagina(){
   const favViejo = (Number(p.get('fv')) || 1) < VERSION_FAVORITO;
   history.replaceState(null, '', location.pathname + location.search);
   if(!texto){
-    if(!p.get('token') || !window.opener) return;
-    chat.item = ''; chat.origen = {token:p.get('token'), campos:[], titulo:de, item:''};
+    if(!p.get('token') || !(saludos[p.get('token')] || window.opener)) return;
+    chat.item = ''; chat.origen = {token:p.get('token'), campos:[], titulo:de, item:'', win:saludos[p.get('token')] || null};
     abrirChat();
     if(favViejo) burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior y no sabe marcar áreas. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes (versión ${VERSION_FAVORITO}).`));
     burbuja('paso', esc(`🔗 Conectado con «${de}». Tocá ⧉ para sacar el asistente a una ventana flotante, volvé a esa página y tocá «🔲 Marcar área» para elegir el ejercicio.`));
@@ -3211,7 +3302,7 @@ function recibirDeOtraPagina(){
   }
   const item = (p.get('item') || '').trim();
   chat.item = item || itemDelTexto(texto);
-  chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de, item:chat.item} : null;
+  chat.origen = (p.get('token') && (saludos[p.get('token')] || window.opener)) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de, item:chat.item, win:saludos[p.get('token')] || null} : null;
   if(favViejo){
     abrirChat();
     burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior${(Number(p.get('fv')) || 1) < 2 ? ': manda el texto, pero no recibe las respuestas de vuelta' : ': le faltan las mejoras nuevas del panel de respuestas'}. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes → «Enviar ejercicios desde otras páginas» (versión ${VERSION}).`));
@@ -3227,6 +3318,7 @@ function recibirDeOtraPagina(){
   abrirChat();
   if(chat.control){ $('#o-msg').value = PEDIDOS_MARCADO.resolver; return; }   /* si está respondiendo otra cosa, queda listo para enviar */
   $('#o-msg').value = PEDIDOS_MARCADO.resolver;
+  if(chat.origen) chat.respDesdeOrigen = true;
   setTimeout(enviarMensaje, 400);
 }
 window.addEventListener('hashchange', recibirDeOtraPagina);
