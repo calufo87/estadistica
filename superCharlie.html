@@ -162,6 +162,22 @@ mark.dudoso{background:transparent;color:var(--warn);text-decoration:underline w
 .aviso{font-size:13px;color:var(--warn);margin:6px 0}
 footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 @media (max-width:600px){.dato .v{font-size:19px}header.top h1{font-size:23px}}
+#asistente .drawer-top .acciones-top{display:flex;gap:2px}
+.solo-flotante,.solo-mini{display:none!important}
+body.flotante .solo-flotante{display:inline-block!important}
+body.flotante #asistente{position:static;transform:none;width:auto;height:100vh;box-sizing:border-box;box-shadow:none;border:0;padding:8px 12px}
+body.flotante{margin:0;overflow:hidden}
+body.flotante.mini #asistente > :not(.drawer-top){display:none!important}
+body.flotante.mini #asistente{height:auto;padding:4px 8px}
+body.flotante.mini .solo-mini{display:inline-block!important}
+body.flotante.mini .drawer-top h2{font-size:14px}
+#o-captura.activa{background:#2f7d4f;color:#fff;border-color:#2f7d4f}
+.miniaturas{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.miniaturas img{max-width:120px;max-height:90px;border:1px solid var(--line);border-radius:6px}
+#sc-recorte{position:fixed;inset:0;z-index:99;background:#1c2230;cursor:crosshair;display:flex;align-items:center;justify-content:center}
+#sc-recorte img{max-width:100%;max-height:100%;user-select:none;-webkit-user-drag:none}
+#sc-recorte .caja{position:fixed;border:2px dashed #e8a33d;background:rgba(232,163,61,.15);pointer-events:none;display:none}
+#sc-recorte .ayuda{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#2c5a87;color:#fff;padding:6px 12px;border-radius:999px;font-size:13px;pointer-events:none}
 </style>
 </head>
 <body>
@@ -361,7 +377,7 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 </main>
 <button id="o-abrir" class="prim fab">💬 Asistente</button>
 <aside id="asistente" class="drawer" aria-label="Asistente">
-  <div class="drawer-top"><h2>Asistente <span id="version-chat" class="version"></span></h2><button id="o-cerrar" aria-label="Cerrar">✕</button></div>
+  <div class="drawer-top"><h2>Asistente <span id="version-chat" class="version"></span> <span id="o-mini-estado" class="solo-mini hint"></span></h2><span class="acciones-top"><button id="o-area-mini" class="solo-mini" title="Marcar un área en la página del ejercicio">🔲</button><button id="o-mini" class="solo-flotante" title="Minimizar">▁</button><button id="o-flotar" title="Sacar el asistente a una ventana flotante que podés mover por la pantalla">⧉</button><button id="o-cerrar" aria-label="Cerrar">✕</button></span></div>
   <div class="fila proveedor"><label>Usar <select id="ia-proveedor"><option value="ollama">Ollama (en mi computadora, gratis)</option><option value="claude">Claude (en la nube, con clave de API)</option></select></label></div>
   <details class="conexion" id="c-conexion" hidden><summary>Conexión con Claude <span id="c-chip" class="chip">sin clave</span></summary>
     <div class="fila"><label>Clave de API <input id="c-clave" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…"></label></div>
@@ -379,20 +395,21 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
   </details>
   <p id="o-estado" class="estado"></p>
   <label class="check" id="o-agente-l" hidden><input type="checkbox" id="o-agente" checked> Modo agente: Claude mira toda la página, la maneja paso a paso y te señala la respuesta</label>
-  <label class="check"><input type="checkbox" id="o-acciones" checked> Que el asistente pase los datos del ejercicio a la página</label>
-  <label class="check" id="o-solo-l"><input type="checkbox" id="o-solo"> Que el modelo local haga las cuentas solo, sin usar la página (puede equivocarse)</label>
+  <label class="check"><input type="checkbox" id="o-acciones"> Usar la página para calcular (llena los campos y la página hace las cuentas). Si está apagada, el asistente lee, analiza y te da las respuestas sin tocar la página.</label>
   <label class="check"><input type="checkbox" id="o-contexto" checked> Enviarle los resultados que tengo en pantalla</label>
   <label class="check"><input type="checkbox" id="o-explicar" checked> Que explique el resultado (si no, solo lo resuelve)</label>
   <div class="archivo-resp">
     <label class="check"><input type="checkbox" id="o-guardar" checked> Ir agregando las respuestas a un archivo de texto</label>
     <div class="fila-arch"><span id="o-archivo-nombre" class="hint"></span><button id="o-archivo-elegir">Elegir archivo…</button><button id="o-historial">Descargar historial (.txt)</button></div>
   </div>
-  <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»<br><br>También podés escribirle: «usá Claude», «usá el modelo local», «calculá vos» (el modelo local hace las cuentas sin la página) o «usá la página».</div></div>
+  <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»<br><br>También podés escribirle: «usá Claude», «usá el modelo local», «usá la página» (la página hace las cuentas) o «calculá vos» (vuelve a resolver sin la página).</div></div>
   <div class="chat-entrada">
     <div id="o-marcado" class="marcado-chip" hidden><span></span><button id="o-marcado-x" aria-label="Quitar texto marcado">✕</button></div>
     <textarea id="o-msg" rows="3" placeholder="Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)"></textarea>
     <div class="botones">
       <button id="o-enviar" class="prim">Enviar</button>
+      <button id="o-area" title="Arrastrá un recuadro sobre el ejercicio en la otra página: lo que quede adentro (texto, casillas e imágenes) va al modelo">🔲 Marcar área</button>
+      <button id="o-captura" title="Compartí la pestaña del ejercicio para que el asistente pueda ver imágenes, fórmulas y PDF">📷 Ver imágenes</button>
       <button id="o-parar" hidden>Detener</button>
       <button id="o-limpiar">Nueva conversación</button>
     </div>
@@ -403,10 +420,12 @@ footer{color:var(--muted);font-size:12.5px;padding:10px 0 30px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.4';
+const VERSION = '5.6';
 const VERSION_FECHA = '14 nov 2026';
-const VERSION_FAVORITO = 4;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 5;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.6 · Por defecto el asistente solo lee, analiza y da las respuestas, sin usar la página; la página calcula solo si activás «Usar la página para calcular»',
+  '5.5 · Asistente en ventana flotante (se mueve por la pantalla y se minimiza); «Marcar área» en la página del ejercicio; ve imágenes; con Ollama las respuestas también se pasan a las casillas; el favorito reusa la pestaña de superCharlie que ya está abierta (favorito versión 5)',
   '5.4 · Cambiar entre Claude y el modelo local escribiéndolo en el chat; opción para que el modelo local haga las cuentas solo, sin usar la página',
   '5.3 · Reconoce el número de ítem y busca su casilla en la hoja de respuestas; se pasan solo las respuestas que elegís (sin «Pasar todas»), también desde la herramienta',
   '5.2 · Con Claude no explica por defecto; pasar respuestas de a una o eligiendo la casilla; respuestas agregadas a un archivo .txt',
@@ -741,8 +760,10 @@ function obtenerLimitesCentralesNormal(pctCentral, media, desv, modoTabla=true){
 }
 
 /* ================== INTERFAZ ================== */
-const $ = s => document.querySelector(s);
-const $$ = s => [...document.querySelectorAll(s)];
+let pipWin = null;   /* ventana flotante del asistente (Picture-in-Picture), si está abierta */
+const $ = s => document.querySelector(s) || (pipWin ? pipWin.document.querySelector(s) : null);
+const $$ = s => [...document.querySelectorAll(s), ...(pipWin ? pipWin.document.querySelectorAll(s) : [])];
+const ventanaActiva = () => (pipWin && pipWin.document.hasFocus()) ? pipWin : window;
 const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const numOrNull = t => { const v = parseNum(t); return (v===null||Number.isNaN(v)) ? null : v; };
 const est = {fuente:'enunciado', csv:null, datos:[], etiqueta:'', pob:false, tabla:null, diagrama:null};
@@ -1107,7 +1128,7 @@ function renderPercentiles(){
   $('#f-pres').innerHTML = h;
 }
 async function copiar(texto, boton){
-  try{ await navigator.clipboard.writeText(texto); const t = boton.textContent; boton.textContent = 'Copiada ✓'; setTimeout(()=>boton.textContent=t, 1400); }
+  try{ await ventanaActiva().navigator.clipboard.writeText(texto); const t = boton.textContent; boton.textContent = 'Copiada ✓'; setTimeout(()=>boton.textContent=t, 1400); }
   catch(e){ alert('No se pudo copiar automáticamente.'); }
 }
 $('#f-copiar').onclick = e => {
@@ -1378,9 +1399,9 @@ function conectarAsistente(precalentar){
   clearInterval(refrescoPs);
   if(esClaude()) return detectarClaude();
   detectarOllama(precalentar);
-  if(document.body.classList.contains('chat-abierto')) refrescoPs = setInterval(refrescarEnMemoria, 20000);
+  if(document.body.classList.contains('chat-abierto') || pipWin) refrescoPs = setInterval(refrescarEnMemoria, 20000);
 }
-const abrirChat = () => { document.body.classList.add('chat-abierto'); setTimeout(()=>$('#o-msg').focus(), 150); conectarAsistente(true); };
+const abrirChat = () => { if(pipWin){ restaurarMini(); } document.body.classList.add('chat-abierto'); setTimeout(()=>$('#o-msg').focus(), 150); conectarAsistente(true); };
 ['#o-abrir','#o-abrir-top','#o-abrir-tab'].forEach(s => $(s).onclick = abrirChat);
 $('#o-cerrar').onclick = () => { document.body.classList.remove('chat-abierto'); clearInterval(refrescoPs); };
 document.addEventListener('keydown', e => { if(e.key==='Escape') document.body.classList.remove('chat-abierto'); });
@@ -1607,7 +1628,13 @@ function mdBasico(txt){
   cerrar();
   return h;
 }
+function avisoMini(clase){
+  if(!pipWin || !pipWin.document.body.classList.contains('mini')) return;
+  const t = {err:'⚠ mensaje nuevo', resultado:'✓ respuestas listas', ia:'💬 respuesta lista'}[clase]; if(!t) return;
+  const e = $('#o-mini-estado'); if(e && !(clase==='ia' && /respuestas listas/.test(e.textContent))) e.textContent = t;
+}
 function burbuja(clase, html){
+  avisoMini(clase);
   const box = $('#chat'); const v = box.querySelector('.vacio'); if(v) v.remove();
   const div = document.createElement('div'); div.className = 'msg '+clase; div.innerHTML = html;
   box.appendChild(div); box.scrollTop = box.scrollHeight; return div;
@@ -1822,6 +1849,23 @@ function limpiarAccion(acc){
   if(h==='curva_normal' && args.tipo!=='B') delete args.valor2;
   return {nombre:h, args};
 }
+/* Las imágenes del área marcada van pegadas al último mensaje del estudiante */
+function conImgsOllama(msgs){
+  if(!chat.imgs || !chat.imgs.length) return msgs;
+  const c = msgs.map(m => ({...m}));
+  for(let i = c.length - 1; i >= 0; i--) if(c[i].role==='user'){ c[i].images = chat.imgs.map(x => x.data); break; }
+  return c;
+}
+function conImgsClaude(msgs){
+  if(!chat.imgs || !chat.imgs.length) return msgs;
+  const c = msgs.map(m => ({...m}));
+  for(let i = c.length - 1; i >= 0; i--) if(c[i].role==='user'){
+    const previo = typeof c[i].content === 'string' ? [{type:'text', text:c[i].content}] : c[i].content;
+    c[i].content = [...chat.imgs.map(x => ({type:'image', source:{type:'base64', media_type:x.media, data:x.data}})), ...previo];
+    break;
+  }
+  return c;
+}
 async function extraerAcciones(txt){
   const previos = chat.historial.filter(m => m.role==='user' || m.role==='assistant').slice(-4);
   let obj;
@@ -1830,7 +1874,7 @@ async function extraerAcciones(txt){
   } else {
     const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
       body: JSON.stringify({model:$('#o-modelo').value, stream:false, format:esquema(), keep_alive:MANTENER, options:{temperature:0, num_ctx:6144, num_predict:400},
-        messages:[{role:'system', content:instruccionesExtractor()}, ...previos, {role:'user', content:txt}]})});
+        messages:conImgsOllama([{role:'system', content:instruccionesExtractor()}, ...previos, {role:'user', content:txt}])})});
     if(!r.ok) await errorOllama(r);
     const j = await r.json();
     try{ obj = JSON.parse((j.message && j.message.content) || ''); }catch(e){ obj = {}; }
@@ -1851,7 +1895,7 @@ async function explicar(div, resultados){
   if(esClaude()) return explicarConClaude(div, sistema);
   const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
     body: JSON.stringify({model:$('#o-modelo').value, stream:true, keep_alive:MANTENER, options:{temperature:0.1, num_ctx:4096, num_predict:450},
-      messages:[{role:'system', content:sistema}, ...chat.historial]})});
+      messages:conImgsOllama([{role:'system', content:sistema}, ...chat.historial])})});
   if(!r.ok) await errorOllama(r);
   const lector = r.body.getReader(), dec = new TextDecoder();
   let buf = '', contenido = '';
@@ -1945,7 +1989,7 @@ async function detectarClaude(){
 /* Paso 1 con Claude: se le obliga a usar una herramienta cuyo formato es el mismo esquema que usa Ollama */
 async function extraerConClaude(sistema, mensajes){
   const r = await fetch(CLAUDE_URL + '/messages', {method:'POST', headers:cabecerasClaude(), signal:chat.control.signal,
-    body: JSON.stringify({model:cfgIA.modeloClaude, max_tokens:1024, system:sistema, messages:mensajesClaude(mensajes),
+    body: JSON.stringify({model:cfgIA.modeloClaude, max_tokens:1024, system:sistema, messages:conImgsClaude(mensajesClaude(mensajes)),
       tools:[{name:'acciones_pagina', description:'Acciones que la página de estadística tiene que hacer con lo que pide el estudiante. Lista vacía si no hay nada que hacer en la página.', input_schema:esquema()}],
       tool_choice:{type:'tool', name:'acciones_pagina'}})});
   if(!r.ok) await errorClaude(r);
@@ -1956,7 +2000,7 @@ async function extraerConClaude(sistema, mensajes){
 /* Paso 2 con Claude: la explicación llega de a poco (streaming) */
 async function explicarConClaude(div, sistema){
   const r = await fetch(CLAUDE_URL + '/messages', {method:'POST', headers:cabecerasClaude(), signal:chat.control.signal,
-    body: JSON.stringify({model:cfgIA.modeloClaude, max_tokens:1500, stream:true, system:sistema, messages:mensajesClaude(chat.historial)})});
+    body: JSON.stringify({model:cfgIA.modeloClaude, max_tokens:1500, stream:true, system:sistema, messages:conImgsClaude(mensajesClaude(chat.historial))})});
   if(!r.ok) await errorClaude(r);
   const lector = r.body.getReader(), dec = new TextDecoder();
   let buf = '', contenido = '';
@@ -2070,7 +2114,7 @@ function herramientasAgente(){
     {name:'elegir', description:'Elegir una opción de una lista desplegable o marcar/desmarcar una casilla ("si" o "no").', input_schema:{type:'object', required:['control','opcion'], properties:{control:{type:'string', enum:ids(controlesPagina())}, opcion:{type:'string'}}}},
     {name:'tocar_boton', description:'Tocar un botón de la página (por ejemplo Analizar o Leer enunciado y resolver).', input_schema:{type:'object', required:['boton'], properties:{boton:{type:'string', enum:ids(botonesPagina())}}}},
     {name:'ir_a_pestana', description:'Abrir una pestaña de la página.', input_schema:{type:'object', required:['pestana'], properties:{pestana:{type:'string', enum:$$('#tabs button[data-tab]').map(b => b.dataset.tab)}}}},
-    {name:'entregar_respuestas', description:'Al terminar, entregá la lista final de respuestas: una fila por cada pregunta del ejercicio, con el número o texto exacto que calculó la página. Se muestra al estudiante como «Pregunta → respuesta»' + (chat.origen && chat.origen.campos.length ? ' y, si ponés campo, se manda a esa casilla de la página de origen.' : '.'),
+    {name:'entregar_respuestas', description:'Al terminar, entregá la lista final de respuestas: una fila por cada pregunta del ejercicio, con el número o texto exacto (el que calculó la página o, si no hay página, el que calculaste vos). Se muestra al estudiante como «Pregunta → respuesta»' + (chat.origen && chat.origen.campos.length ? ' y, si ponés campo, se manda a esa casilla de la página de origen.' : '.'),
       input_schema:{type:'object', required:['respuestas'], properties:{resumen:{type:'string', description:'Una oración corta con lo que se resolvió.'}, respuestas:{type:'array', items:{type:'object', required:['pregunta','respuesta'], properties:Object.assign({
         pregunta:{type:'string', description:'La pregunta, corta (ej. "Porcentaje por encima de 65").'},
         respuesta:{type:'string', description:'La respuesta tal como la muestra la página (ej. "6,68"). Para listas u opción única: el valor exacto de una opción de la casilla.'}},
@@ -2197,7 +2241,7 @@ async function actualizarNombreArchivo(){
   $('#o-archivo-nombre').textContent = !puedeAgregar ? `${n} guardada(s) en el historial` : archivoResp ? `Archivo: ${archivoResp.name} · ${n} en el historial` : `Sin archivo elegido · ${n} en el historial`;
 }
 async function elegirArchivo(){
-  archivoResp = await window.showSaveFilePicker({suggestedName:'respuestas_estadistica.txt', types:[{description:'Texto', accept:{'text/plain':['.txt']}}]});
+  archivoResp = await ventanaActiva().showSaveFilePicker({suggestedName:'respuestas_estadistica.txt', types:[{description:'Texto', accept:{'text/plain':['.txt']}}]});
   await bdGuardar('archivo', archivoResp); actualizarNombreArchivo();
   return archivoResp;
 }
@@ -2244,28 +2288,41 @@ MODO AGENTE: podés ver y manejar toda la página con las herramientas.
 - Cuando tengas la respuesta, dejala a la vista: abrí la pestaña donde está y usá senalar_respuesta con el número exacto como aparece en la página y su etiqueta (lo que dice al lado). Si son varias respuestas, señalá cada una.
 - No toques «Volver a los valores del curso» ni cambies decimales, separador o valores perdidos si el estudiante no lo pide.
 - Si el mensaje trae «Texto que marqué en la página», eso es lo que el estudiante quiere que analices o resuelvas: trabajá sobre ese texto y señalá en la pantalla las respuestas que salgan de él.
+- Si el mensaje trae imágenes, son parte del área que marcó el estudiante: leé en ellas los datos, las tablas y las preguntas, y pasá esos datos a la página para calcular.
 - Si el estudiante solo pregunta algo teórico, respondé sin tocar la página.
 - Cuando el ejercicio tenga preguntas para responder, antes de tu mensaje final usá entregar_respuestas con una fila por pregunta (en el orden del ejercicio) y los números exactos de la página.
 - Al terminar, escribí tu respuesta para el estudiante.`;
+const INSTRUCCIONES_CLAUDE_SOLO = `Sos un tutor de estadística descriptiva para un estudiante de primer año de Psicología. El curso usa el libro de Robert Pagano.
+El estudiante quiere que leas el ejercicio, lo analices y le des las respuestas. NO hay página para calcular: hacé vos las cuentas. Reglas:
+- Respondé en español, con un tono cercano y claro.
+- Hacé las cuentas con cuidado, paso a paso, y revisá cada operación. Para la curva normal usá la tabla A de Pagano (z con dos decimales, áreas con cuatro decimales).
+- Usá coma como separador decimal (ejemplo: 14,35) y no pongas el símbolo de porcentaje en frecuencias relativas ni en áreas de la curva normal.
+- El redondeo del curso es por paridad: si la cifra que se elimina es exactamente 5, se redondea al número par.
+- Si el mensaje trae imágenes, son parte del ejercicio: leé en ellas los datos, las tablas y las preguntas.
+- Si te falta un dato, pedíselo al estudiante.
+- Cuando el ejercicio tenga preguntas para responder, antes de tu mensaje final usá entregar_respuestas con una fila por pregunta, en el orden del ejercicio.`;
 async function agenteClaude(txt){
   $$('.senalado').forEach(e => e.classList.remove('senalado'));
   const usarHerr = $('#o-acciones').checked;
-  const sistema = INSTRUCCIONES + REGLAS_AGENTE + ($('#o-explicar').checked ? '' : '\n- El estudiante quiere ir rápido: al terminar respondé en una o dos oraciones, solo qué hiciste y dónde está la respuesta.')
+  const sistema = !usarHerr
+    ? INSTRUCCIONES_CLAUDE_SOLO + ($('#o-explicar').checked ? '\n- Al terminar, explicá con palabras los pasos que seguiste.' : '\n- El estudiante quiere ir rápido: al terminar respondé en una o dos oraciones, solo con las respuestas.')
+    : INSTRUCCIONES + REGLAS_AGENTE + ($('#o-explicar').checked ? '' : '\n- El estudiante quiere ir rápido: al terminar respondé en una o dos oraciones, solo qué hiciste y dónde está la respuesta.')
     + (usarHerr ? '' : '\n- Ahora NO podés tocar la página: solo mirala y respondé.');
-  const foto = verPantalla();
-  const conv = mensajesClaude([...chat.historial.slice(-6), {role:'user', content:txt}]);
-  conv[conv.length-1].content += `\n\n[Así está la página ahora]\n${foto}`;
+  const foto = usarHerr ? verPantalla() : '';
+  let conv = mensajesClaude([...chat.historial.slice(-6), {role:'user', content:txt}]);
+  if(usarHerr) conv[conv.length-1].content += `\n\n[Así está la página ahora]\n${foto}`;
   if(chat.origen && chat.origen.campos.length){
     conv[conv.length-1].content += `\n\n[Casillas de respuesta en la página de origen «${chat.origen.titulo}»${chat.item ? ` — el estudiante está resolviendo el ítem ${chat.item}; las casillas marcadas [hoja de respuestas del ítem ${chat.item}] son donde van sus respuestas` : ''}]\n` + chat.origen.campos.map(c =>
       `  · ${c.id}${c.hoja ? ` [hoja de respuestas del ítem ${chat.item}]` : ''} · tipo ${c.tipo} · «${c.etiqueta || ''}»${c.pregunta && c.pregunta!==c.etiqueta ? ` (pregunta: «${c.pregunta.slice(0,160)}»)` : ''}${c.opciones ? ' · opciones: ' + c.opciones.map(o => o.valor===o.texto ? o.valor : `${o.valor} = ${o.texto}`).join('; ') : ''}`).join('\n') +
       `\nAl final, en entregar_respuestas poné en campo la casilla que corresponde a cada respuesta, en el formato que pide: número tal como lo da la página (coma decimal), en listas y opción única el valor exacto de una opción, en casillas "si" o "no". Si una casilla no tiene que ver con lo que se resolvió, no la uses.`;
   }
+  conv = conImgsClaude(conv);
   const hechos = []; let vistos = foto + '\n' + contextoActual(), final = '';
   let entregoAlOrigen = false, recordado = false;
-  const aviso = burbuja('paso', 'Mirando la página…');
+  const aviso = burbuja('paso', usarHerr ? 'Mirando la página…' : 'Leyendo el ejercicio…');
   for(let paso = 1; paso <= 15; paso++){
     const cuerpo = {model:cfgIA.modeloClaude, max_tokens:2000, system:sistema, messages:conv};
-    if(usarHerr) cuerpo.tools = herramientasAgente();
+    cuerpo.tools = usarHerr ? herramientasAgente() : herramientasAgente().filter(h => h.name === 'entregar_respuestas');
     const r = await fetch(CLAUDE_URL + '/messages', {method:'POST', headers:cabecerasClaude(), signal:chat.control.signal, body:JSON.stringify(cuerpo)});
     if(!r.ok) await errorClaude(r);
     const j = await r.json(), bloques = j.content || [];
@@ -2274,7 +2331,7 @@ async function agenteClaude(txt){
     const texto = bloques.filter(b => b.type==='text').map(b => b.text).join('\n').trim();
     if(!usos.length){
       /* refuerzo: si hay casillas en la página de origen y todavía no se mandaron respuestas, se le pide una vez más */
-      if(usarHerr && chat.origen && chat.origen.campos.length && !entregoAlOrigen && !recordado){
+      if(chat.origen && chat.origen.campos.length && !entregoAlOrigen && !recordado){
         recordado = true;
         conv.push({role:'user', content:'Todavía no mandaste las respuestas a las casillas de la página de origen. Usá ahora entregar_respuestas con una fila por pregunta y en cada una el campo de la casilla que le corresponde. Después escribí tu mensaje final.'});
         continue;
@@ -2299,8 +2356,11 @@ async function agenteClaude(txt){
   const tarjeta = tarjetaResultados(hechos.filter(Boolean));
   if(tarjeta) burbuja('resultado', tarjeta);
   mostrarRespuestasPendientes();
-  const {html, dudosos} = marcarDudosos(mdBasico(final), numerosDe(vistos + '\n' + txt));
-  burbuja('ia', html + (dudosos ? `<p class="aviso">⚠ Marqué ${dudosos} número(s) que no coinciden con lo que calculó la página. Usá los del recuadro de resultados.</p>` : ''));
+  if(!usarHerr) burbuja('ia', mdBasico(final) + '<p class="aviso">⚠ Estas cuentas las hizo Claude, no la página. Revisalas antes de usarlas.</p>');
+  else {
+    const {html, dudosos} = marcarDudosos(mdBasico(final), numerosDe(vistos + '\n' + txt));
+    burbuja('ia', html + (dudosos ? `<p class="aviso">⚠ Marqué ${dudosos} número(s) que no coinciden con lo que calculó la página. Usá los del recuadro de resultados.</p>` : ''));
+  }
   chat.historial.push({role:'user', content:txt}, {role:'assistant', content:final});
 }
 
@@ -2308,11 +2368,13 @@ async function agenteClaude(txt){
 const PIE_OLLAMA = $('#o-pie').textContent;
 function aplicarProveedor(){
   $('#ia-proveedor').value = cfgIA.proveedor;
-  $('#o-conexion').hidden = esClaude(); $('#c-conexion').hidden = !esClaude(); $('#o-agente-l').hidden = !esClaude(); $('#o-solo-l').hidden = esClaude(); $('#o-solo').checked = !!cfgIA.soloModelo;
-  $('#o-explicar').checked = esClaude() ? !!cfgIA.explicarClaude : cfgIA.explicarOllama !== false;
-  $('#o-pie').textContent = esClaude()
-    ? 'Claude corre en la nube de Anthropic: tus mensajes y los resultados en pantalla se envían allá, y cada pregunta gasta un poco de tu crédito. Los números los calcula la página; Claude llena los campos, elige opciones y explica. Revisá los datos que puso.'
-    : PIE_OLLAMA;
+  $('#o-conexion').hidden = esClaude(); $('#c-conexion').hidden = !esClaude(); $('#o-agente-l').hidden = !esClaude(); $('#o-acciones').checked = !!cfgIA.usarPagina;
+  $('#o-explicar').checked = esClaude() ? !!cfgIA.explicarClaude : cfgIA.explicarOllama === true;
+  $('#o-pie').textContent = (esClaude()
+    ? 'Claude corre en la nube de Anthropic: tus mensajes se envían allá y cada pregunta gasta un poco de tu crédito. '
+    : 'El modelo corre en tu computadora. ')
+    + (cfgIA.usarPagina ? 'Los números los calcula la página; el asistente llena los campos y puede equivocarse al interpretar el ejercicio: revisá los datos que puso.'
+      : 'Ahora el asistente hace las cuentas solo, sin la página: revisá los números antes de usarlos. Si querés cuentas exactas, activá «Usar la página para calcular».');
 }
 $('#ia-proveedor').addEventListener('change', e => {
   if(chat.control) chat.control.abort();
@@ -2324,7 +2386,7 @@ $('#c-guardar').onclick = () => {
   if(!/^sk-ant-/.test(k)){ $('#o-estado').className = 'estado err'; $('#o-estado').textContent = 'Esa no parece una clave de Claude: tiene que empezar con sk-ant-'; return; }
   cfgIA.claveClaude = k; guardarIA(); detectarClaude();
 };
-$('#o-solo').addEventListener('change', e => { cfgIA.soloModelo = e.target.checked; guardarIA(); });
+$('#o-acciones').addEventListener('change', e => { cfgIA.usarPagina = e.target.checked; guardarIA(); aplicarProveedor(); });
 $('#o-explicar').addEventListener('change', e => { if(esClaude()) cfgIA.explicarClaude = e.target.checked; else cfgIA.explicarOllama = e.target.checked; guardarIA(); });
 $('#c-olvidar').onclick = () => { cfgIA.claveClaude = ''; $('#c-clave').value = ''; guardarIA(); detectarClaude(); };
 $('#c-probar').onclick = () => detectarClaude();
@@ -2394,7 +2456,7 @@ document.addEventListener('keyup', e => { if(e.shiftKey || e.key==='Shift') revi
 document.addEventListener('mousedown', e => { if(!e.target.closest('#sel-barra')) barra.hidden = true; });
 window.addEventListener('scroll', () => { barra.hidden = true; }, true);
 const PEDIDOS_MARCADO = {
-  resolver:'Resolvé esto en la página y marcame las respuestas en la pantalla.',
+  get resolver(){ return cfgIA.usarPagina ? 'Resolvé esto en la página y marcame las respuestas en la pantalla.' : 'Resolvé esto y dame las respuestas.'; },
   explicar:'Explicame esto con palabras sencillas y un ejemplo.'
 };
 barra.addEventListener('click', e => {
@@ -2408,6 +2470,249 @@ barra.addEventListener('click', e => {
 });
 $('#o-marcado-x').onclick = () => soltarMarcado(true);
 
+/* ---------- VENTANA FLOTANTE: el asistente sale de la pestaña (Document Picture-in-Picture: Chrome y Edge) ---------- */
+const lugarAsistente = document.createComment('lugar del asistente');
+let tamNormal = {w:440, h:700};
+async function flotarAsistente(){
+  if(pipWin){ volverAPestana(); return; }
+  if(!('documentPictureInPicture' in window)){ burbuja('err', 'Tu navegador no permite sacar el asistente a una ventana flotante. Funciona en Chrome o Edge de computadora (versión 116 o más nueva).'); return; }
+  let w;
+  try{ w = await documentPictureInPicture.requestWindow({width:tamNormal.w, height:tamNormal.h}); }
+  catch(e){ burbuja('err', 'No se pudo abrir la ventana flotante: ' + esc(e.message)); return; }
+  const d = w.document;
+  d.title = 'Asistente · superCharlie';
+  document.querySelectorAll('style, link[rel="stylesheet"]').forEach(st => d.head.appendChild(st.cloneNode(true)));
+  d.body.className = 'flotante chat-abierto';
+  const asis = document.getElementById('asistente');
+  asis.before(lugarAsistente);
+  d.body.appendChild(asis);
+  pipWin = w;
+  document.body.classList.remove('chat-abierto');
+  $('#o-flotar').textContent = '⤓'; $('#o-flotar').title = 'Volver el asistente a la pestaña';
+  d.addEventListener('keydown', e => { if(e.key==='Escape' && !$('#sc-recorte')) minimizar(); });
+  w.addEventListener('pagehide', devolverAsistente);
+  conectarAsistente(false);
+  $('#chat').scrollTop = $('#chat').scrollHeight;
+}
+function devolverAsistente(){
+  if(!pipWin) return;
+  const asis = pipWin.document.getElementById('asistente');
+  pipWin = null;
+  if(asis && lugarAsistente.parentNode) lugarAsistente.replaceWith(asis);
+  document.body.classList.add('chat-abierto');
+  const b = document.getElementById('o-flotar'); if(b){ b.textContent = '⧉'; b.title = 'Sacar el asistente a una ventana flotante que podés mover por la pantalla'; }
+  const m = document.getElementById('o-mini'); if(m) m.textContent = '▁';
+}
+function volverAPestana(){ const w = pipWin; devolverAsistente(); try{ w.close(); }catch(e){} }
+function minimizar(){
+  if(!pipWin) return;
+  const b = pipWin.document.body;
+  if(b.classList.contains('mini')) return restaurarMini();
+  tamNormal = {w:pipWin.innerWidth, h:pipWin.innerHeight};
+  b.classList.add('mini'); $('#o-mini').textContent = '▢'; $('#o-mini').title = 'Restaurar'; $('#o-mini-estado').textContent = '';
+  try{ pipWin.resizeTo(340, 64); }catch(e){}
+}
+function restaurarMini(){
+  if(!pipWin) return;
+  const b = pipWin.document.body; if(!b.classList.contains('mini')) return;
+  b.classList.remove('mini'); $('#o-mini').textContent = '▁'; $('#o-mini').title = 'Minimizar';
+  try{ pipWin.resizeTo(tamNormal.w, tamNormal.h); }catch(e){}
+  $('#chat').scrollTop = $('#chat').scrollHeight;
+}
+
+/* ---------- VER IMÁGENES: se comparte la pestaña del ejercicio y se recorta el área marcada ---------- */
+const captura = {stream:null, video:null};
+function botonCaptura(){
+  const b = $('#o-captura'); if(!b) return;
+  b.classList.toggle('activa', !!captura.stream);
+  b.textContent = captura.stream ? '📷 Viendo la pantalla' : '📷 Ver imágenes';
+  b.title = captura.stream ? 'Tocá para dejar de compartir la pantalla' : 'Compartí la pestaña del ejercicio para que el asistente pueda ver imágenes, fórmulas y PDF';
+}
+function pararCaptura(){
+  if(captura.stream) captura.stream.getTracks().forEach(t => t.stop());
+  captura.stream = null; captura.video = null; botonCaptura();
+}
+async function activarCaptura(){
+  if(captura.stream){ pararCaptura(); return; }
+  const op = {video:{displaySurface:'browser', frameRate:5}, audio:false, preferCurrentTab:false, selfBrowserSurface:'exclude', surfaceSwitching:'include'};
+  let st = null;
+  try{ st = await navigator.mediaDevices.getDisplayMedia(op); }
+  catch(e){
+    if(e.name !== 'NotAllowedError' || !pipWin){ burbuja('err', e.name==='NotAllowedError' ? 'No se compartió la pantalla.' : 'No se pudo compartir la pantalla: ' + esc(e.message)); return; }
+    try{ st = await pipWin.navigator.mediaDevices.getDisplayMedia(op); }catch(e2){ burbuja('err', 'No se compartió la pantalla.'); return; }
+  }
+  captura.stream = st;
+  const v = document.createElement('video'); v.muted = true; v.playsInline = true; v.srcObject = st;
+  try{ await v.play(); }catch(e){}
+  captura.video = v;
+  st.getVideoTracks()[0].addEventListener('ended', pararCaptura);
+  botonCaptura();
+  const sup = st.getVideoTracks()[0].getSettings().displaySurface;
+  burbuja('paso', '📷 Listo, ya puedo ver ' + (sup==='browser' ? 'la pestaña que compartiste' : sup==='window' ? 'la ventana que compartiste' : 'tu pantalla') +
+    '. Cuando marqués un área, también te mando al modelo la foto de esa parte.' + (sup==='browser' ? '' : ' Para que el recorte salga exacto, lo mejor es compartir la pestaña del ejercicio («Pestaña de Chrome»).'));
+}
+async function fotoPantalla(){
+  const track = captura.stream.getVideoTracks()[0];
+  if('ImageCapture' in window){ try{ return await new ImageCapture(track).grabFrame(); }catch(e){} }
+  const v = captura.video, c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight; c.getContext('2d').drawImage(v, 0, 0);
+  return c;
+}
+/* Recorta una parte de una imagen y la devuelve lista para el modelo (JPEG, máx. 1600 px) */
+function recorte(src, x, y, w, h){
+  x = Math.max(0, Math.round(x)); y = Math.max(0, Math.round(y));
+  w = Math.min(Math.round(w), src.width - x); h = Math.min(Math.round(h), src.height - y);
+  if(w < 4 || h < 4) return null;
+  const k = Math.min(1, 1600 / Math.max(w, h)), c = document.createElement('canvas');
+  c.width = Math.round(w * k); c.height = Math.round(h * k);
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(src, x, y, w, h, 0, 0, c.width, c.height);
+  const url = c.toDataURL('image/jpeg', 0.88);
+  return {media:'image/jpeg', data:url.split(',')[1], url};
+}
+async function recortarArea(d){
+  const bmp = await fotoPantalla(), v = d.vista || {}, r = d.rect;
+  const sup = captura.stream.getVideoTracks()[0].getSettings().displaySurface;
+  let k, ox = 0, oy = 0, aviso = '';
+  const borde = Math.max(0, (v.ow - v.vw) / 2), barraSup = Math.max(0, v.oh - v.vh - borde);
+  if(sup === 'browser'){
+    k = bmp.width / v.vw;
+    if(Math.abs(bmp.width / bmp.height - v.vw / v.vh) > 0.04) aviso = 'La pestaña que compartiste no parece ser la del ejercicio: el recorte puede no coincidir. Tocá «📷» para dejar de compartir y compartí la pestaña correcta.';
+  } else if(sup === 'window'){ k = bmp.width / v.ow; ox = borde; oy = barraSup; }
+  else { k = bmp.width / v.sw; ox = v.sx + borde; oy = v.sy + barraSup; }
+  return {img:recorte(bmp, (r.x + ox) * k, (r.y + oy) * k, r.w * k, r.h * k), aviso};
+}
+/* Sin conexión con la página: se marca el área sobre una foto de la pantalla compartida */
+async function marcarEnCaptura(){
+  const bmp = await fotoPantalla();
+  const c = document.createElement('canvas'); c.width = bmp.width; c.height = bmp.height; c.getContext('2d').drawImage(bmp, 0, 0);
+  const doc = $('#asistente').ownerDocument;
+  const ov = doc.createElement('div'); ov.id = 'sc-recorte';
+  ov.innerHTML = `<img alt=""><div class="caja"></div><div class="ayuda">Arrastrá sobre el ejercicio · Esc cancela</div>`;
+  const img = ov.querySelector('img'), caja = ov.querySelector('.caja');
+  img.src = c.toDataURL('image/jpeg', 0.85);
+  doc.body.appendChild(ov);
+  return new Promise(listo => {
+    let x0 = 0, y0 = 0, arr = false;
+    const fin = res => { ov.remove(); doc.removeEventListener('keydown', tecla, true); listo(res); };
+    const tecla = e => { if(e.key === 'Escape'){ e.stopPropagation(); fin(null); } };
+    doc.addEventListener('keydown', tecla, true);
+    const mover = e => { const l = Math.min(x0, e.clientX), t = Math.min(y0, e.clientY); Object.assign(caja.style, {left:l + 'px', top:t + 'px', width:Math.abs(e.clientX - x0) + 'px', height:Math.abs(e.clientY - y0) + 'px'}); };
+    ov.addEventListener('mousedown', e => { e.preventDefault(); x0 = e.clientX; y0 = e.clientY; arr = true; caja.style.display = 'block'; mover(e); });
+    ov.addEventListener('mousemove', e => { if(arr) mover(e); });
+    ov.addEventListener('mouseup', e => {
+      if(!arr) return; arr = false;
+      const ir = img.getBoundingClientRect(), k = c.width / ir.width;
+      const x = (Math.min(x0, e.clientX) - ir.left) * k, y = (Math.min(y0, e.clientY) - ir.top) * k;
+      fin(recorte(c, x, y, Math.abs(e.clientX - x0) * k, Math.abs(e.clientY - y0) * k));
+    });
+  });
+}
+const miniaturas = imgs => imgs && imgs.length ? `<div class="miniaturas">${imgs.map(i => `<img src="${i.url}" alt="imagen del área marcada">`).join('')}</div>` : '';
+
+/* ---------- MARCAR ÁREA: arrastrás un recuadro en la página del ejercicio ---------- */
+let esperaArea = null, avisoArea = null;
+async function marcarArea(){
+  const conectado = !!(chat.origen && window.opener && !window.opener.closed);
+  if(chat.control){ restaurarMini(); burbuja('err', 'Esperá a que termine la respuesta actual (o tocá «Detener»).'); return; }
+  if(conectado){
+    window.opener.postMessage({tipo:'sc-marcar-area', token:chat.origen.token}, '*');
+    try{ window.opener.focus(); }catch(e){}
+    if(avisoArea) avisoArea.remove();
+    avisoArea = burbuja('paso', `🔲 Andá a «${esc(chat.origen.titulo)}» y arrastrá un recuadro sobre el ejercicio (Esc cancela).`);
+    const e = $('#o-mini-estado'); if(e) e.textContent = '🔲 marcá el área…';
+    clearTimeout(esperaArea);
+    esperaArea = setTimeout(() => { if(avisoArea){ avisoArea.remove(); avisoArea = null; } burbuja('err', esc(`«${chat.origen.titulo}» no respondió. Volvé a tocar el favorito «Enviar a mi herramienta» en esa página (tiene que ser la versión ${VERSION_FAVORITO}, de Ajustes).`)); }, 2500);
+    return;
+  }
+  restaurarMini();
+  if(captura.stream){
+    const img = await marcarEnCaptura(); if(!img) return;
+    chat.imagenesPend = [img];
+    fijarMarcado({texto:'(el ejercicio está en la imagen del área que marqué)', lugar:'un área de la pantalla compartida'});
+    $('#o-msg').value = $('#o-msg').value.trim() || PEDIDOS_MARCADO.resolver;
+    enviarMensaje();
+    return;
+  }
+  burbuja('err', 'Para marcar un área en la página del ejercicio, primero conectala: en esa página tocá el favorito «Enviar a mi herramienta» sin marcar nada. Si el ejercicio está en un PDF o en otro programa, tocá «📷 Ver imágenes» y después «🔲 Marcar área» para marcarlo sobre una foto de la pantalla.');
+}
+async function recibirArea(d){
+  clearTimeout(esperaArea);
+  if(avisoArea){ avisoArea.remove(); avisoArea = null; }
+  if(d.cancelado){ burbuja('paso', 'Cancelaste el área.'); const e = $('#o-mini-estado'); if(e) e.textContent = ''; return; }
+  chat.origen.campos = Array.isArray(d.campos) ? d.campos : [];
+  chat.item = d.item || itemDelTexto(d.texto || ''); chat.origen.item = chat.item;
+  let imgs = [], aviso = '';
+  if(captura.stream){ try{ const r = await recortarArea(d); if(r.img) imgs.push(r.img); aviso = r.aviso; }catch(e){ aviso = 'No pude recortar la pantalla: ' + e.message; } }
+  if(!imgs.length) imgs = (d.imagenes || []).slice(0, 4).map(u => ({media:(u.match(/^data:([^;]+)/) || [,'image/jpeg'])[1], data:u.split(',')[1], url:u}));
+  const texto = String(d.texto || '').trim();
+  if(!texto && !imgs.length){ burbuja('err', 'No encontré texto ni imágenes dentro del área. Si el ejercicio es una imagen o un PDF, tocá «📷 Ver imágenes» y marcá el área de nuevo.'); return; }
+  if(aviso) burbuja('err', esc(aviso));
+  chat.imagenesPend = imgs;
+  const nc = chat.origen.campos.length;
+  burbuja('paso', esc(`🔲 Área marcada${chat.item ? ` · Ítem ${chat.item}` : ''}: ${texto ? texto.length + ' caracteres de texto' : 'sin texto'}, ${imgs.length} imagen(es) y ${nc} casilla(s) de respuesta.`) +
+    (imgs.length || captura.stream ? '' : '<br><span class="hint">Si el área tenía fórmulas, tablas en imagen o un PDF, tocá «📷 Ver imágenes» para que también las vea.</span>') + miniaturas(imgs));
+  fijarMarcado({texto:texto || '(el ejercicio está en la imagen del área que marqué)', lugar:`un área de «${chat.origen.titulo}»`});
+  $('#o-msg').value = $('#o-msg').value.trim() || PEDIDOS_MARCADO.resolver;
+  enviarMensaje();
+}
+window.addEventListener('message', e => {
+  const d = e.data;
+  if(!d || !chat.origen || e.source !== window.opener || d.token !== chat.origen.token) return;
+  if(d.tipo === 'sc-area-iniciada'){ clearTimeout(esperaArea); return; }
+  if(d.tipo === 'sc-area') recibirArea(d);
+});
+
+/* ---------- RESPUESTAS CON EL MODELO LOCAL: se arman y se pasan a las casillas de la página del ejercicio ---------- */
+async function respuestasOllama(txt, resultados, contenido, campos){
+  const lista = campos.map(c => `- ${c.id} · tipo ${c.tipo} · «${c.etiqueta || ''}»${c.pregunta && c.pregunta !== c.etiqueta ? ` (pregunta: «${String(c.pregunta).slice(0,160)}»)` : ''}${c.opciones ? ' · opciones: ' + c.opciones.map(o => o.valor === o.texto ? o.valor : `${o.valor} = ${o.texto}`).join('; ') : ''}`).join('\n');
+  const sistema = `Armá la lista de respuestas finales de un ejercicio de estadística. Respondé solo con el JSON pedido.
+- Una fila por cada pregunta del ejercicio, en el orden del ejercicio.
+- respuesta: solo el número o la opción, sin explicación. ${resultados ? 'Copiá los números IDÉNTICOS de los resultados de la página, con los mismos decimales. No calcules nada.' : 'Usá los números de la respuesta del tutor.'} Coma decimal.
+- campo: el id de la casilla de la página del ejercicio donde va esa respuesta. En listas y opción única la respuesta tiene que ser el valor exacto de una de sus opciones; en casillas "si" o "no". Si ninguna casilla corresponde, dejá campo vacío.
+Casillas de la página del ejercicio:
+${lista}`;
+  const usuario = `Ejercicio:\n${txt}\n\n${resultados ? 'Resultados que calculó la página:\n' + resultados.slice(0, 3000) + '\n\n' : ''}${contenido ? 'Respuesta del tutor:\n' + contenido.slice(0, 3000) : ''}`;
+  const esq = {type:'object', properties:{respuestas:{type:'array', items:{type:'object', properties:{pregunta:{type:'string'}, respuesta:{type:'string'}, campo:{type:'string'}}, required:['pregunta','respuesta','campo']}}}, required:['respuestas']};
+  const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
+    body: JSON.stringify({model:$('#o-modelo').value, stream:false, format:esq, keep_alive:MANTENER, options:{temperature:0, num_ctx:6144, num_predict:600},
+      messages:conImgsOllama([{role:'system', content:sistema}, {role:'user', content:usuario}])})});
+  if(!r.ok) await errorOllama(r);
+  const j = await r.json();
+  let obj = {}; try{ obj = JSON.parse((j.message && j.message.content) || ''); }catch(e){}
+  const ids = campos.map(c => c.id);
+  return (Array.isArray(obj.respuestas) ? obj.respuestas : []).filter(f => f && !vacio(f.respuesta)).slice(0, 20)
+    .map(f => ({pregunta:String(f.pregunta || ''), respuesta:String(f.respuesta), campo:ids.includes(f.campo) ? f.campo : null}));
+}
+/* Muestra en el asistente las respuestas válidas, con «Pasar ➜» para llenarlas, marcarlas o seleccionarlas en la otra página */
+async function respuestasFinales(txt, resultados, contenido, soloModelo){
+  if(esClaude()) return;
+  const campos = (chat.origen && window.opener && !window.opener.closed) ? chat.origen.campos : [];
+  let filas = [];
+  if(campos.length){
+    const aviso = burbuja('paso', 'Armando las respuestas para las casillas…');
+    try{ filas = await respuestasOllama(txt, resultados, contenido, campos); }
+    catch(e){ if(e.name === 'AbortError') throw e; burbuja('err', 'No pude armar las respuestas para las casillas: ' + esc(e.message)); }
+    finally{ aviso.remove(); }
+  }
+  if(!filas.length && soloModelo) filas = respuestasDelTexto(contenido);
+  if(!filas.length) return;
+  let quitadas = 0;
+  if(!soloModelo){
+    const perm = numerosDe(resultados + '\n' + txt + '\n' + contextoActual());
+    filas = filas.filter(f => { const ok = marcarDudosos(esc(f.respuesta), perm).dudosos === 0; if(!ok) quitadas++; return ok; });
+    if(!filas.length){ burbuja('err', 'Las respuestas que armó el modelo no coinciden con lo que calculó la página, así que no te las paso. Usá los números del recuadro de resultados.'); return; }
+  }
+  entregarRespuestas({respuestas:filas, resumen:soloModelo ? 'Cuentas hechas por el modelo local, sin la página: revisalas' : ''});
+  mostrarRespuestasPendientes();
+  if(quitadas) burbuja('paso', `⚠ Saqué ${quitadas} respuesta(s) cuyo número no coincidía con lo que calculó la página.`);
+}
+
+$('#o-flotar').onclick = flotarAsistente;
+$('#o-mini').onclick = minimizar;
+$('#o-area').onclick = marcarArea;
+$('#o-area-mini').onclick = marcarArea;
+$('#o-captura').onclick = activarCaptura;
+
 /* ---------- ÓRDENES EN EL CHAT: cambiar de modelo o de forma de calcular escribiéndolo ---------- */
 const ORDENES = [
   {rx:/^\s*(?:por favor\s*,?\s*)?(?:us[aá]|utiliz[aá]|cambi[aá] a|pas[aá] a|con)\s+(?:a\s+)?claude\b/i, hacer:() => cambiarProveedor('claude')},
@@ -2419,12 +2724,12 @@ function cambiarProveedor(prov){
   if(cfgIA.proveedor === prov) return prov === 'claude' ? 'Ya estoy usando Claude.' : 'Ya estoy usando el modelo local.';
   cfgIA.proveedor = prov; guardarIA(); aplicarProveedor(); conectarAsistente(true);
   return prov === 'claude' ? `Listo, ahora uso Claude (${nombreModeloClaude(cfgIA.modeloClaude)}).` + (cfgIA.claveClaude ? '' : ' Falta la clave de API: pegala en «Conexión con Claude».')
-    : `Listo, ahora uso el modelo local (${$('#o-modelo').value}).` + (cfgIA.soloModelo ? ' Ojo: está activado que haga las cuentas solo, sin la página.' : '');
+    : `Listo, ahora uso el modelo local (${$('#o-modelo').value}).` + (cfgIA.usarPagina ? ' La página sigue haciendo las cuentas.' : '');
 }
 function cambiarSolo(si){
-  cfgIA.soloModelo = si; guardarIA(); $('#o-solo').checked = si;
-  if(si) return 'Listo: el modelo local va a hacer las cuentas solo, sin usar la página. Revisá los números, porque se puede equivocar.' + (esClaude() ? ' (Ahora estás con Claude: esto se aplica cuando vuelvas al modelo local.)' : '');
-  return 'Listo: vuelvo a usar la página para calcular.';
+  cfgIA.usarPagina = !si; guardarIA(); aplicarProveedor();
+  if(si) return 'Listo: leo, analizo y te doy las respuestas sin usar la página. Revisá los números, porque me puedo equivocar.';
+  return 'Listo: ahora uso la página para calcular (llena los campos y la página hace las cuentas).';
 }
 /* Devuelve el texto que queda después de la orden (si hay) */
 function aplicarOrdenes(txt){
@@ -2439,7 +2744,7 @@ function aplicarOrdenes(txt){
   return {resto, avisos};
 }
 const INSTRUCCIONES_SOLO = `Sos un tutor de estadística descriptiva para un estudiante de primer año de Psicología. El curso usa el libro de Robert Pagano.
-Esta vez el estudiante quiere que VOS hagas las cuentas, sin usar la página. Reglas:
+Esta vez el estudiante quiere que VOS hagas las cuentas, sin usar la página. Si el mensaje trae imágenes, leé en ellas los datos y las preguntas. Reglas:
 - Respondé en español, con un tono cercano y claro.
 - Hacé las cuentas paso a paso, con cuidado, explicando cada paso con palabras y números, no con símbolos matemáticos ni fórmulas con letras.
 - Revisá cada operación antes de seguir. Para la curva normal usá los valores de la tabla A de Pagano (z con dos decimales, áreas con cuatro decimales).
@@ -2447,11 +2752,19 @@ Esta vez el estudiante quiere que VOS hagas las cuentas, sin usar la página. Re
 - El redondeo del curso es por paridad: si la cifra que se elimina es exactamente 5, se redondea al número par.
 - Si te falta un dato, pedíselo al estudiante.
 - Al final escribí una línea «Respuestas:» y debajo una respuesta por pregunta, en el orden del ejercicio.`;
+/* Saca las líneas que vienen después de «Respuestas:» en el texto del modelo */
+function respuestasDelTexto(t){
+  const m = String(t || '').split(/\*{0,2}respuestas\s*:?\*{0,2}\s*:?\s*\n/i); if(m.length < 2) return [];
+  return m[m.length - 1].split('\n').map(l => l.replace(/\*\*/g, '').replace(/^\s*(?:[-*•]|\d{1,2}[.)])\s*/, '').trim()).filter(Boolean).slice(0, 20).map(l => {
+    const mm = l.match(/^(.{1,80}?)\s*[:=→]\s*(.+)$/);
+    return mm ? {pregunta:mm[1].trim(), respuesta:mm[2].trim()} : {pregunta:'', respuesta:l};
+  });
+}
 async function resolverSoloModelo(div){
   const sistema = INSTRUCCIONES_SOLO + ($('#o-explicar').checked ? '' : '\n- El estudiante quiere ir rápido: mostrá solo los pasos mínimos y las respuestas.');
   const r = await fetch(ollamaURL()+'/api/chat', {method:'POST', headers:{'Content-Type':'application/json'}, signal:chat.control.signal,
     body: JSON.stringify({model:$('#o-modelo').value, stream:true, keep_alive:MANTENER, options:{temperature:0.1, num_ctx:4096, num_predict:1500},
-      messages:[{role:'system', content:sistema}, ...chat.historial]})});
+      messages:conImgsOllama([{role:'system', content:sistema}, ...chat.historial])})});
   if(!r.ok) await errorOllama(r);
   const lector = r.body.getReader(), dec = new TextDecoder();
   let buf = '', contenido = '';
@@ -2488,19 +2801,29 @@ async function enviarMensaje(){
   if(!txt || chat.control) return;
   $('#o-msg').value = '';
   const inicio = chat.historial.length;
-  burbuja('yo', esc(txt));
+  chat.imgs = chat.imagenesPend || []; chat.imagenesPend = null;
+  burbuja('yo', esc(txt) + miniaturas(chat.imgs));
+  const em = $('#o-mini-estado'); if(em) em.textContent = '⏳ resolviendo…';
   chat.control = new AbortController();
   $('#o-enviar').disabled = true; $('#o-parar').hidden = false;
   let div = null;
   try{
-    if(esClaude() && $('#o-agente').checked){ await agenteClaude(txt); return; }
-    if(!esClaude() && $('#o-solo').checked){
+    if(chat.imgs.length && !esClaude()){
+      const caps = await capacidadesDe($('#o-modelo').value);
+      if(caps && !caps.includes('vision')){
+        burbuja('err', esc(`El modelo ${$('#o-modelo').value} no puede ver imágenes, así que solo le mando el texto. Para que vea imágenes instalá un modelo con visión, por ejemplo en PowerShell: ollama pull qwen2.5vl:7b (y elegilo en «Conexión con Ollama»), o usá Claude.`));
+        chat.imgs = [];
+      }
+    }
+    if(esClaude() && ($('#o-agente').checked || !$('#o-acciones').checked)){ await agenteClaude(txt); return; }
+    if(!esClaude() && !$('#o-acciones').checked){
       chat.historial.push({role:'user', content:txt});
       div = burbuja('ia', '<p class="hint">Haciendo las cuentas…</p>');
       const contenido = await resolverSoloModelo(div);
       if(!contenido.trim()) div.innerHTML = '<p class="hint">(el modelo no respondió nada)</p>';
       else div.insertAdjacentHTML('beforeend', '<p class="aviso">⚠ Estas cuentas las hizo el modelo, no la página. Revisalas antes de usarlas.</p>');
       chat.historial.push({role:'assistant', content:contenido});
+      if(contenido.trim()) await respuestasFinales(txt, '', contenido, true);
       return;
     }
     let resultados = '';
@@ -2545,6 +2868,7 @@ async function enviarMensaje(){
       const msg = `Listo, ya llené los campos y la página calculó.${pestanas.length ? ' Revisalo en: ' + pestanas.join(', ') + '.' : ''}`;
       burbuja('ia', mdBasico(msg));
       chat.historial.push({role:'assistant', content:msg});
+      await respuestasFinales(txt, resultados, '', false);
       return;
     }
     div = burbuja('ia', '<p class="hint">Escribiendo…</p>');
@@ -2556,12 +2880,14 @@ async function enviarMensaje(){
       div.innerHTML = html + (dudosos ? `<p class="aviso">⚠ Marqué ${dudosos} número(s) que no coinciden con lo que calculó la página. Usá los del recuadro de resultados.</p>` : '');
     }
     chat.historial.push({role:'assistant', content:contenido});
+    if(contenido.trim()) await respuestasFinales(txt, resultados, contenido, false);
   }catch(e){
     chat.historial.length = inicio;
     if(e.name==='AbortError'){ if(div) div.insertAdjacentHTML('beforeend','<p class="hint">(detenido)</p>'); }
     else { if(div) div.remove(); $$('#chat .msg.ia').forEach(d => { if(/Leyendo el ejercicio/.test(d.textContent)) d.remove(); }); burbuja('err', esc(e instanceof TypeError ? ayudaConexion() : e.message)); }
   }finally{
-    chat.control = null; $('#o-enviar').disabled = false; $('#o-parar').hidden = true;
+    chat.control = null; chat.imgs = null; $('#o-enviar').disabled = false; $('#o-parar').hidden = true;
+    const em2 = $('#o-mini-estado'); if(em2 && /resolviendo/.test(em2.textContent)) em2.textContent = '💬 respuesta lista';
     if(!esClaude()) refrescarEnMemoria();
   }
 }
@@ -2577,8 +2903,7 @@ const URL_HERRAMIENTA = location.origin + location.pathname;
 function marcadorOrigen(URLH, FV){
   var sel = getSelection(), t = String(sel).trim(), act = document.activeElement;
   if(!t && act && typeof act.value === 'string' && act.selectionEnd > act.selectionStart) t = act.value.slice(act.selectionStart, act.selectionEnd).trim();
-  if(!t) t = prompt('No marcaste ningún texto. Pegá aquí el ejercicio:');
-  if(!t) return;
+  /* sin texto marcado: solo conecta; el área se marca después desde el asistente */
   var limpio = function(x){ return String(x || '').replace(/\s+/g, ' ').trim(); };
   var norm = function(x){ return limpio(x).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); };
   var visible = function(el){ var r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && getComputedStyle(el).visibility !== 'hidden'; };
@@ -2636,20 +2961,24 @@ function marcadorOrigen(URLH, FV){
     else d.tipo = 'texto';
     campos.push(d); mapa[id] = [el];
   };
-  var cont = base;
-  for(var i = 0; i < 10 && cont && cont !== document.body; i++){
-    if([].some.call(cont.querySelectorAll(SEL), visible)) break;
-    cont = cont.parentElement;
-  }
-  if(!cont) cont = document.body;
-  if(item){
+  var agregarHoja = function(){
+    if(!item) return;
     var rxItem = new RegExp('(^|\\D)' + item + '(\\D|$)');
     [].filter.call(document.querySelectorAll(SEL), visible).slice(0, 400).forEach(function(el){
       var et = etiqueta(el), nm = (el.name || '') + ' ' + (el.id || '');
       if((et.length <= 40 && rxItem.test(et)) || rxItem.test(nm)) agregar(el, true);
     });
+  };
+  if(t){
+    var cont = base;
+    for(var i = 0; i < 10 && cont && cont !== document.body; i++){
+      if([].some.call(cont.querySelectorAll(SEL), visible)) break;
+      cont = cont.parentElement;
+    }
+    if(!cont) cont = document.body;
+    agregarHoja();
+    [].filter.call(cont.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){ agregar(el, false); });
   }
-  [].filter.call(cont.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){ agregar(el, false); });
   /* ---- escribir una respuesta en una casilla según su tipo ---- */
   var setValor = function(el, v){
     var proto = el.tagName === 'TEXTAREA' ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
@@ -2679,6 +3008,86 @@ function marcadorOrigen(URLH, FV){
   window.__scToken = token; window.__scMapa = mapa; window.__scCampos = campos; window.__scItem = item;
   window.__scEscribir = function(r){ return escribirEn(window.__scMapa[r.campo], r.valor); };
   var origenH = new URL(URLH).origin;
+  var avisarHerr = function(d){
+    d.token = window.__scToken;
+    try{ window.__scHerr.postMessage(d, origenH); }catch(e){ alert('Se perdió la conexión con superCharlie. Volvé a tocar el favorito «Enviar a mi herramienta».'); }
+  };
+  /* ---- marcar un área: recuadro que se arrastra; se manda el texto, las casillas y las imágenes que quedan adentro ---- */
+  var procesarArea = function(r){
+    var corta = function(b){ return b.width > 0 && b.height > 0 && b.right > r.x && b.left < r.x + r.w && b.bottom > r.y && b.top < r.y + r.h; };
+    var bloque = function(el){ for(var i = 0; i < 8 && el && el !== document.body; i++){ if(!/^inline/.test(getComputedStyle(el).display)) return el; el = el.parentElement; } return el; };
+    var partes = [], ultimo = null, primero = null, nd, rg = document.createRange();
+    var tw = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    while((nd = tw.nextNode())){
+      if(!nd.nodeValue.trim()) continue;
+      var pe = nd.parentElement;
+      if(!pe || /^(SCRIPT|STYLE|NOSCRIPT|OPTION|TEXTAREA)$/.test(pe.tagName) || pe.closest('#sc-panel,#sc-area')) continue;
+      rg.selectNodeContents(nd);
+      var rs = rg.getClientRects(), dentro = false;
+      for(var i = 0; i < rs.length; i++) if(corta(rs[i])){ dentro = true; break; }
+      if(!dentro) continue;
+      if(!primero) primero = pe;
+      var b = bloque(pe);
+      partes.push((ultimo && b !== ultimo ? '\n' : ' ') + nd.nodeValue.replace(/\s+/g, ' ').trim());
+      ultimo = b;
+    }
+    [].forEach.call(document.querySelectorAll('img[alt]'), function(im){ if(im.alt.trim() && corta(im.getBoundingClientRect())) partes.push('\n[imagen: ' + im.alt.trim() + ']'); });
+    var texto = partes.join('').replace(/^\s+/, '').slice(0, 8000);
+    /* casillas dentro del área (y las del mismo ítem en la hoja de respuestas) */
+    campos.length = 0; vistos.length = 0; Object.keys(mapa).forEach(function(k){ delete mapa[k]; }); Object.keys(grupos).forEach(function(k){ delete grupos[k]; });
+    t = texto; base = primero;
+    var enArea = [].filter.call(document.querySelectorAll(SEL), function(el){ return visible(el) && corta(el.getBoundingClientRect()); });
+    if(!base && enArea.length) base = enArea[0];
+    item = detectarItem(); window.__scItem = item;
+    agregarHoja();
+    enArea.slice(0, 50).forEach(function(el){ agregar(el, false); });
+    if(!campos.length && base){
+      var cont2 = base;
+      for(var j = 0; j < 6 && cont2 && cont2 !== document.body; j++){ if([].some.call(cont2.querySelectorAll(SEL), visible)) break; cont2 = cont2.parentElement; }
+      if(cont2 && cont2 !== document.body) [].filter.call(cont2.querySelectorAll(SEL), visible).slice(0, 40).forEach(function(el){ agregar(el, false); });
+    }
+    /* imágenes de la misma página (las de otros sitios no se pueden copiar: para esas está «Ver imágenes») */
+    var imagenes = [];
+    [].forEach.call(document.querySelectorAll('img,canvas'), function(im){
+      if(imagenes.length >= 4) return;
+      var b = im.getBoundingClientRect(); if(!corta(b) || b.width < 24 || b.height < 24) return;
+      try{
+        var w = im.naturalWidth || im.width, h = im.naturalHeight || im.height, k = Math.min(1, 1400 / Math.max(w, h));
+        var c = document.createElement('canvas'); c.width = Math.round(w * k); c.height = Math.round(h * k);
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+        imagenes.push(c.toDataURL('image/jpeg', 0.85));
+      }catch(e){}
+    });
+    var camposTxt2 = JSON.stringify(campos); var camposEnv = camposTxt2.length > 20000 ? campos.slice(0, 25) : campos;
+    avisarHerr({tipo:'sc-area', texto:texto, campos:camposEnv, item:item, rect:r, imagenes:imagenes,
+      vista:{vw:innerWidth, vh:innerHeight, dpr:devicePixelRatio, sx:screenX, sy:screenY, ow:outerWidth, oh:outerHeight, sw:screen.width}});
+  };
+  window.__scArea = function(){
+    var viejo = document.getElementById('sc-area'); if(viejo) viejo.remove();
+    var ov = document.createElement('div'); ov.id = 'sc-area';
+    ov.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;z-index:2147483647;cursor:crosshair;background:rgba(28,34,48,.15)';
+    var caja = document.createElement('div');
+    caja.style.cssText = 'position:fixed;border:2px dashed #e8a33d;background:rgba(232,163,61,.12);display:none;pointer-events:none';
+    var ayuda = document.createElement('div');
+    ayuda.textContent = '🔲 Arrastrá un recuadro sobre el ejercicio · Esc cancela';
+    ayuda.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);background:#2c5a87;color:#fff;padding:8px 14px;border-radius:999px;font:14px system-ui,Segoe UI,Arial,sans-serif;pointer-events:none;box-shadow:0 4px 14px rgba(0,0,0,.2)';
+    ov.appendChild(caja); ov.appendChild(ayuda); document.body.appendChild(ov);
+    var x0 = 0, y0 = 0, arr = false;
+    var mover = function(e){ caja.style.left = Math.min(x0, e.clientX) + 'px'; caja.style.top = Math.min(y0, e.clientY) + 'px'; caja.style.width = Math.abs(e.clientX - x0) + 'px'; caja.style.height = Math.abs(e.clientY - y0) + 'px'; };
+    var fin = function(){ ov.remove(); document.removeEventListener('keydown', tecla, true); };
+    var tecla = function(e){ if(e.key === 'Escape'){ e.preventDefault(); e.stopPropagation(); fin(); avisarHerr({tipo:'sc-area', cancelado:true}); } };
+    document.addEventListener('keydown', tecla, true);
+    ov.addEventListener('mousedown', function(e){ e.preventDefault(); x0 = e.clientX; y0 = e.clientY; arr = true; caja.style.display = 'block'; mover(e); });
+    ov.addEventListener('mousemove', function(e){ if(arr) mover(e); });
+    ov.addEventListener('mouseup', function(e){
+      if(!arr) return; arr = false;
+      var r = {x:Math.min(x0, e.clientX), y:Math.min(y0, e.clientY), w:Math.abs(e.clientX - x0), h:Math.abs(e.clientY - y0)};
+      fin();
+      if(r.w < 8 || r.h < 8){ avisarHerr({tipo:'sc-area', cancelado:true}); return; }
+      /* se espera a que desaparezca el velo antes de leer (y de que la herramienta saque la foto) */
+      requestAnimationFrame(function(){ requestAnimationFrame(function(){ setTimeout(function(){ procesarArea(r); }, 120); }); });
+    });
+  };
   /* ---- panel con las respuestas: cada una se pasa sola, con su botón ---- */
   window.__scPanel = function(d){
     var viejo = document.getElementById('sc-panel'); if(viejo && viejo.__cerrar) viejo.__cerrar(); else if(viejo) viejo.remove();
@@ -2739,6 +3148,8 @@ function marcadorOrigen(URLH, FV){
     addEventListener('message', function(e){
       var d = e.data;
       if(!d || d.token !== window.__scToken || e.origin !== window.__scOrigenH) return;
+      window.__scHerr = e.source;
+      if(d.tipo === 'sc-marcar-area'){ try{ e.source.postMessage({tipo:'sc-area-iniciada', token:d.token}, e.origin); }catch(x){} if(window.__scArea) window.__scArea(); return; }
       if(d.tipo === 'sc-respuestas') window.__scPanel(d);
       if(d.tipo === 'sc-pasar'){
         var err = window.__scEscribir(d.respuesta);
@@ -2749,7 +3160,7 @@ function marcadorOrigen(URLH, FV){
   }
   window.__scOrigenH = origenH;
   var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 15));
-  window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&item=' + encodeURIComponent(item) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), '_blank');
+ window.__scHerr = window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&item=' + encodeURIComponent(item) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), 'superCharlie');
 }
 function codigoMarcador(){
   return 'javascript:' + encodeURIComponent('(' + marcadorOrigen.toString().replace(/^\s+/gm, '') + ')(' + JSON.stringify(URL_HERRAMIENTA) + ',' + VERSION_FAVORITO + ');void 0');
@@ -2774,7 +3185,14 @@ function recibirDeOtraPagina(){
   let campos = []; try{ campos = JSON.parse(p.get('campos') || '[]'); }catch(e){}
   const favViejo = (Number(p.get('fv')) || 1) < VERSION_FAVORITO;
   history.replaceState(null, '', location.pathname + location.search);
-  if(!texto) return;
+  if(!texto){
+    if(!p.get('token') || !window.opener) return;
+    chat.item = ''; chat.origen = {token:p.get('token'), campos:[], titulo:de, item:''};
+    abrirChat();
+    if(favViejo) burbuja('err', esc(`Tu favorito «Enviar a mi herramienta» es de una versión anterior y no sabe marcar áreas. Borralo de la barra de favoritos y arrastralo de nuevo desde Ajustes (versión ${VERSION_FAVORITO}).`));
+    burbuja('paso', esc(`🔗 Conectado con «${de}». Tocá ⧉ para sacar el asistente a una ventana flotante, volvé a esa página y tocá «🔲 Marcar área» para elegir el ejercicio.`));
+    return;
+  }
   const item = (p.get('item') || '').trim();
   chat.item = item || itemDelTexto(texto);
   chat.origen = (p.get('token') && window.opener) ? {token:p.get('token'), campos:Array.isArray(campos) ? campos : [], titulo:de, item:chat.item} : null;
@@ -2798,6 +3216,7 @@ function recibirDeOtraPagina(){
 window.addEventListener('hashchange', recibirDeOtraPagina);
 $('#ir-marcador').onclick = () => { irA('ajustes'); setTimeout(() => $('#enviar-desde').scrollIntoView({behavior:'smooth', block:'start'}), 150); };
 
+try{ if(!window.name) window.name = 'superCharlie'; }catch(e){}
 (function mostrarVersion(){
   const t = `v${VERSION}`, tip = `Versión ${VERSION} · ${VERSION_FECHA}\n\nNovedades:\n` + NOVEDADES.join('\n');
   $('#version').textContent = t; $('#version').title = tip;
