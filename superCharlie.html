@@ -433,10 +433,11 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.13';
+const VERSION = '5.14';
 const VERSION_FECHA = '14 nov 2026';
-const VERSION_FAVORITO = 8;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 9;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.14 · Tecla X: con el cursor en una casilla pega la respuesta marcada (texto, opción o casilla) y la copia; nada se pasa solo (favorito versión 9)',
   '5.13 · Cada caso se numera y muestra el comienzo del enunciado; al empezar otro caso se limpian las respuestas anteriores y las nuevas se iluminan (favorito versión 8)',
   '5.12 · Si el favorito es viejo, el recuadro de respuestas avisa que hay que instalar el nuevo; ya no muestra «Ítem 0»',
   '5.11 · El recuadro de la página del ejercicio también conversa con el modelo: preguntar, «¿Por qué?», enviar lo seleccionado, marcar área y elegir Claude o modelo local (favorito versión 7)',
@@ -3184,13 +3185,13 @@ function marcadorOrigen(URLH, FV){
       btn('minimizar', '', '▁') + btn('cerrar', '', '✕') + '</div><div data-cuerpo>';
     if(d.ejercicio && resp.length) h += '<div style="font-size:12.5px;color:#474747;background:#f0f4f9;border-radius:6px;padding:4px 8px;margin-bottom:6px">📝 «' + esc2(limpio(d.ejercicio).slice(0, 160)) + (limpio(d.ejercicio).length > 160 ? '…' : '') + '»</div>';
     if(d.resumen) h += '<div style="color:#474747;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
-    if(resp.length) h += '<div style="color:#474747;font-size:12.5px;margin-bottom:6px">Pasá solo las que querés: <b>Pasar</b>, o <b>Elegir casilla…</b> y después clic en la casilla donde va. <b>¿Por qué?</b> le pregunta al modelo.</div>';
+    if(resp.length) h += '<div style="color:#474747;font-size:12.5px;margin-bottom:6px">⌨ Poné el cursor en la casilla y apretá <b>X</b>: se pega la respuesta marcada con 👉 (y se copia). Clic en otra respuesta para elegirla. <b>Shift + X</b> escribe una X normal.</div>';
     resp.forEach(function(r, k){
       var c = campos.filter(function(x){ return x.id === r.campo; })[0];
       var nombre = (r.pregunta || (c && (c.etiqueta || c.pregunta)) || ('Pregunta ' + (k + 1)));
       var mostrar = String(r.valor);
       if(c && c.opciones){ var op = c.opciones.filter(function(o){ return o.valor === mostrar; })[0]; if(op && op.texto) mostrar = op.texto; }
-      h += '<div style="padding:7px 0;border-top:1px solid #e3e3e3"><span style="color:#474747">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span>' +
+      h += '<div data-fila="' + k + '" style="padding:7px 0 7px 8px;border-top:1px solid #e3e3e3;border-left:3px solid transparent;cursor:pointer"><span data-flecha="' + k + '" style="font-weight:700;color:#0b57d0"></span><span style="color:#474747">' + (k + 1) + '. ' + esc2(limpio(nombre).slice(0, 90)) + '</span>' +
         (c && c.hoja ? ' <span style="font-size:11px;color:#0b57d0;border:1px solid #0b57d0;border-radius:999px;padding:0 6px">hoja de respuestas</span>' : '') +
         '<br><b style="font-size:15px">' + esc2(mostrar) + '</b> <span data-e="' + k + '" style="font-weight:600"></span>' +
         '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap">' + (c ? btn('pasar', k, 'Pasar', true) : '<span style="color:#b3261e;font-size:12.5px;align-self:center">sin casilla detectada</span>') + btn('elegir', k, 'Elegir casilla…') + btn('porque', k, '¿Por qué?') + '</div></div>';
@@ -3222,7 +3223,58 @@ function marcadorOrigen(URLH, FV){
       out.textContent = err ? '⚠ ' + err : '✓ pasada'; out.style.color = err ? '#b3261e' : '#146c2e';
       var b = p.querySelector('button[data-a="pasar"][data-k="' + k + '"]'); if(b && !err){ b.textContent = '✓ Pasada'; b.style.background = '#146c2e'; }
     };
-    window.__scMarcar = marcar;
+    window.__scMarcar = function(k, err){ marcar(k, err); if(!err){ pasadas[k] = true; if(k === actual) avanzar(); } };
+    /* ---- tecla X: pega la respuesta marcada en la casilla donde está el cursor ---- */
+    var pasadas = {}, actual = resp.length ? 0 : -1;
+    var pintar = function(){
+      [].forEach.call(p.querySelectorAll('[data-fila]'), function(f){
+        var k = Number(f.dataset.fila), es = k === actual;
+        f.style.borderLeftColor = es ? '#0b57d0' : 'transparent'; f.style.background = es ? '#f0f4f9' : '';
+        p.querySelector('[data-flecha="' + k + '"]').textContent = es ? '👉 X · ' : '';
+      });
+    };
+    var avanzar = function(){
+      for(var i = 1; i <= resp.length; i++){ var k = (actual + i) % resp.length; if(!pasadas[k]){ actual = k; pintar(); return; } }
+      actual = -1; pintar();
+    };
+    pintar();
+    var esCampo = function(el){
+      if(!el || el === document.body || p.contains(el)) return false;
+      if(el.isContentEditable) return true;
+      if(el.tagName === 'TEXTAREA' || el.tagName === 'SELECT') return true;
+      return el.tagName === 'INPUT' && !/^(button|submit|reset|image|file|hidden|range|color)$/.test(el.type);
+    };
+    var toast = function(txt){
+      var t = document.createElement('div'); t.textContent = txt;
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:2147483647;background:#1f1f1f;color:#fff;padding:7px 14px;border-radius:999px;font:13.5px system-ui,Segoe UI,Arial,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.25);pointer-events:none';
+      document.body.appendChild(t); setTimeout(function(){ t.remove(); }, 1600);
+    };
+    var pegarEn = function(el, v){
+      if(el.isContentEditable){ el.focus(); document.execCommand('insertText', false, v); return ''; }
+      if(el.type === 'radio'){ return escribirEn(el.name ? [].slice.call(document.getElementsByName(el.name)) : [el], v); }
+      if(el.type === 'checkbox' || el.tagName === 'SELECT' || el.type === 'number' || !el.value) return escribirEn([el], v);
+      try{
+        var a = el.selectionStart, b = el.selectionEnd;
+        el.setRangeText(v, a, b, 'end');
+        el.dispatchEvent(new Event('input', {bubbles:true})); el.dispatchEvent(new Event('change', {bubbles:true}));
+        el.style.outline = '3px solid #e8a33d'; el.style.outlineOffset = '2px';
+        return '';
+      }catch(e){ return escribirEn([el], v); }
+    };
+    var alX = function(e){
+      if(e.key !== 'x' || e.ctrlKey || e.altKey || e.metaKey || actual < 0 || !document.body.contains(p)) return;
+      var el = document.activeElement;
+      if(el && p.contains(el)) return;
+      e.preventDefault(); e.stopPropagation();
+      var k = actual, v = String(resp[k].valor);
+      try{ navigator.clipboard.writeText(v); }catch(x){}
+      if(!esCampo(el)){ toast('📋 Copiada: ' + v + ' · poné el cursor en una casilla para pegarla con X'); return; }
+      var err = pegarEn(el, v);
+      marcar(k, err);
+      if(err){ toast('⚠ ' + err); return; }
+      pasadas[k] = true; toast('✓ Pegada: ' + v); avanzar();
+    };
+    document.addEventListener('keydown', alX, true);
     var esperando = null, tragarClick = false;
     var alElegir = function(e){
       if(esperando === null) return;
@@ -3231,7 +3283,7 @@ function marcadorOrigen(URLH, FV){
       e.preventDefault(); e.stopPropagation();
       var els = el.type === 'radio' && el.name ? [].slice.call(document.getElementsByName(el.name)) : [el];
       var k = esperando; esperando = null; aviso.style.display = 'none';
-      marcar(k, escribirEn(els, resp[k].valor));
+      var er2 = escribirEn(els, resp[k].valor); marcar(k, er2); if(!er2){ pasadas[k] = true; if(k === actual) avanzar(); }
       tragarClick = true; setTimeout(function(){ tragarClick = false; }, 600);
     };
     var alClick = function(e){ if(tragarClick && !p.contains(e.target)){ e.preventDefault(); e.stopPropagation(); tragarClick = false; } };
@@ -3239,15 +3291,16 @@ function marcadorOrigen(URLH, FV){
     document.addEventListener('mousedown', alElegir, true);
     document.addEventListener('click', alClick, true);
     document.addEventListener('keydown', alTecla, true);
-    p.__cerrar = function(){ document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); window.__scMarcar = null; window.__scMostrarTexto = null; p.remove(); };
+    p.__cerrar = function(){ document.removeEventListener('keydown', alX, true); document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); window.__scMarcar = null; window.__scMostrarTexto = null; p.remove(); };
     prov.addEventListener('change', function(){ window.__scProv = prov.value; avisarHerr({tipo:'sc-proveedor', valor:prov.value}); });
     preg.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); p.querySelector('button[data-a="preguntar"]').click(); } });
     p.addEventListener('click', function(e){
-      var b = e.target.closest('button'); if(!b) return;
+      var b = e.target.closest('button');
+      if(!b){ var f = e.target.closest('[data-fila]'); if(f){ actual = Number(f.dataset.fila); pintar(); } return; }
       var a = b.dataset.a, k = b.dataset.k === '' ? null : Number(b.dataset.k);
       if(a === 'cerrar'){ p.__cerrar(); return; }
       if(a === 'minimizar'){ var cu = p.querySelector('[data-cuerpo]'); var oc = cu.style.display === 'none'; cu.style.display = oc ? '' : 'none'; b.textContent = oc ? '▁' : '▢'; p.style.width = oc ? '400px' : 'auto'; return; }
-      if(a === 'pasar'){ marcar(k, window.__scEscribir(resp[k])); return; }
+      if(a === 'pasar'){ var er = window.__scEscribir(resp[k]); marcar(k, er); if(!er){ pasadas[k] = true; if(k === actual) avanzar(); } return; }
       if(a === 'elegir'){ esperando = k; aviso.style.display = 'block'; aviso.textContent = 'Ahora hacé clic en la casilla donde va «' + String(resp[k].valor) + '». (Esc para cancelar)'; return; }
       if(a === 'porque'){ mandar({tipo:'sc-pregunta', texto:'¿Por qué la respuesta de «' + limpio(resp[k].pregunta || ('la pregunta ' + (k + 1))) + '» es ' + resp[k].valor + '? Explicámelo con palabras y los pasos.'}); return; }
       if(a === 'preguntar'){ var q = preg.value.trim(); if(!q){ preg.focus(); return; } preg.value = ''; mandar({tipo:'sc-pregunta', texto:q}); return; }
