@@ -189,6 +189,11 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 #sc-recorte .ayuda{position:fixed;top:8px;left:50%;transform:translateX(-50%);background:#0b57d0;color:#fff;padding:6px 12px;border-radius:999px;font-size:13px;pointer-events:none}
 .fila-int{display:flex;align-items:center;gap:10px}.fila-int input{flex:1;padding:0;border:0;background:transparent}
 #o-int-l{display:flex;flex-direction:row;align-items:center;gap:8px}#o-int-l input{flex:1;padding:0;border:0;background:transparent}
+.adjuntos{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0}
+.adjuntos .adj{position:relative}
+.adjuntos img{max-width:110px;max-height:80px;border:1px solid var(--line);border-radius:6px;display:block}
+.adjuntos .adj button{position:absolute;top:-7px;right:-7px;border-radius:999px;width:22px;height:22px;padding:0;font-size:12px;line-height:20px}
+#asistente.soltando{outline:3px dashed var(--acc);outline-offset:-6px}
 </style>
 </head>
 <body>
@@ -418,9 +423,11 @@ body.flotante.mini .drawer-top h2{font-size:14px}
   <div id="chat" class="chat" aria-live="polite"><div class="vacio">Pedile que resuelva un ejercicio, por ejemplo:<br>«Media 100, desviación 15: ¿qué área hay entre 85 y 115?»<br>«Cargá estos datos: 12 15 18 20 22 25 25 30 y sacá el percentil 75 con amplitud 5»<br><br>También podés escribirle: «usá Claude», «usá el modelo local», «usá la página» (la página hace las cuentas) o «calculá vos» (vuelve a resolver sin la página).</div></div>
   <div class="chat-entrada">
     <div id="o-marcado" class="marcado-chip" hidden><span></span><button id="o-marcado-x" aria-label="Quitar texto marcado">✕</button></div>
-    <textarea id="o-msg" rows="3" placeholder="Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)"></textarea>
+    <div id="o-adjuntos" class="adjuntos" hidden></div>
+    <textarea id="o-msg" rows="3" placeholder="Escribí tu pregunta o pegá un pantallazo con Ctrl + V… (Enter envía, Shift + Enter hace salto de línea)"></textarea>
     <div class="botones">
       <button id="o-enviar" class="prim">Enviar</button>
+      <button id="o-imagen" title="Subir un pantallazo o una foto del ejercicio (también podés pegarlo con Ctrl + V o arrastrarlo aquí)">📎 Imagen</button><input id="o-imagen-arch" type="file" accept="image/*" multiple hidden>
       <button id="o-area" title="Arrastrá un recuadro sobre el ejercicio en la otra página: lo que quede adentro (texto, casillas e imágenes) va al modelo">🔲 Marcar área</button>
       <button id="o-captura" title="Compartí la pestaña del ejercicio para que el asistente pueda ver imágenes, fórmulas y PDF">📷 Ver imágenes</button>
       <button id="o-parar" hidden>Detener</button>
@@ -433,10 +440,13 @@ body.flotante.mini .drawer-top h2{font-size:14px}
 
 <script>
 /* ---------- VERSIÓN: cambiala cada vez que publiques una versión nueva ---------- */
-const VERSION = '5.14';
+const VERSION = '5.17';
 const VERSION_FECHA = '14 nov 2026';
-const VERSION_FAVORITO = 9;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
+const VERSION_FAVORITO = 12;   /* subila solo cuando cambie el código del favorito «Enviar a mi herramienta» */
 const NOVEDADES = [
+  '5.17 · Pantallazos: pegalos con Ctrl + V, subilos con 📎 o arrastralos al asistente; también se pueden pegar en el recuadro de la página del ejercicio (favorito versión 12)',
+  '5.16 · Versión local: corre desde tu computadora con «Abrir superCharlie.bat», sin GitHub; su favorito es «Enviar a mi herramienta (local)» (favorito versión 11)',
+  '5.15 · «Marcar área» arriba en el recuadro de respuestas, siempre a la vista (favorito versión 10)',
   '5.14 · Tecla X: con el cursor en una casilla pega la respuesta marcada (texto, opción o casilla) y la copia; nada se pasa solo (favorito versión 9)',
   '5.13 · Cada caso se numera y muestra el comienzo del enunciado; al empezar otro caso se limpian las respuestas anteriores y las nuevas se iluminan (favorito versión 8)',
   '5.12 · Si el favorito es viejo, el recuadro de respuestas avisa que hay que instalar el nuevo; ya no muestra «Ítem 0»',
@@ -2191,9 +2201,11 @@ window.addEventListener('message', e => {
   }
   if(d.tipo === 'sc-pregunta'){
     chat.origen.win = e.source;
-    const t = String(d.texto || '').trim(); if(!t) return;
+    const imgsOrigen = imagenesDeDataURL(d.imagenes);
+    const t = String(d.texto || '').trim() || (imgsOrigen.length ? PEDIDO_IMAGEN : ''); if(!t) return;
     if(chat.control){ enviarAlOrigen({tipo:'sc-texto', texto:'⚠ Todavía estoy respondiendo lo anterior. Probá de nuevo en un momento.'}); return; }
     chat.respDesdeOrigen = true;
+    if(imgsOrigen.length){ chat.imagenesPend = imgsOrigen; chat.ultimoEjercicio = '(pantallazo) ' + (String(d.texto || '').trim() || ''); }
     $('#o-msg').value = t; enviarMensaje();
   }
 });
@@ -2767,6 +2779,42 @@ $('#o-area').onclick = marcarArea;
 $('#o-area-mini').onclick = marcarArea;
 $('#o-captura').onclick = activarCaptura;
 
+/* ---------- PANTALLAZOS: pegar (Ctrl + V), subir (📎) o arrastrar imágenes al asistente ---------- */
+chat.adjuntos = [];
+const PEDIDO_IMAGEN = 'Resolvé lo que aparece en la imagen y dame las respuestas.';
+async function imagenDeArchivo(f){
+  const bmp = await createImageBitmap(f);
+  return recorte(bmp, 0, 0, bmp.width, bmp.height);
+}
+function pintarAdjuntos(){
+  const box = $('#o-adjuntos'); if(!box) return;
+  box.hidden = !chat.adjuntos.length;
+  box.innerHTML = chat.adjuntos.map((a, k) => `<div class="adj"><img src="${a.url}" alt="imagen adjunta ${k + 1}"><button data-k="${k}" title="Quitar esta imagen">✕</button></div>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => { chat.adjuntos.splice(Number(b.dataset.k), 1); pintarAdjuntos(); });
+}
+async function adjuntarArchivos(lista){
+  const imgs = [...lista].filter(f => f && /^image\//.test(f.type));
+  if(!imgs.length) return false;
+  for(const f of imgs){
+    if(chat.adjuntos.length >= 4){ burbuja('err', 'Se pueden mandar hasta 4 imágenes por mensaje.'); break; }
+    try{ const im = await imagenDeArchivo(f); if(im) chat.adjuntos.push(im); }catch(e){ burbuja('err', 'No pude leer esa imagen: ' + esc(e.message)); }
+  }
+  pintarAdjuntos();
+  const m = $('#o-msg'); if(m){ m.focus(); if(!m.value.trim()) m.placeholder = 'Imagen lista. Escribí qué querés saber o apretá Enter para que la resuelva…'; }
+  return true;
+}
+$('#asistente').addEventListener('paste', async e => {
+  const fs = [...(e.clipboardData ? e.clipboardData.items : [])].filter(i => i.kind === 'file').map(i => i.getAsFile());
+  if(fs.some(f => f && /^image\//.test(f.type))){ e.preventDefault(); await adjuntarArchivos(fs); }
+});
+$('#asistente').addEventListener('dragover', e => { if([...(e.dataTransfer ? e.dataTransfer.items : [])].some(i => i.kind === 'file')){ e.preventDefault(); $('#asistente').classList.add('soltando'); } });
+$('#asistente').addEventListener('dragleave', e => { if(e.target === $('#asistente')) $('#asistente').classList.remove('soltando'); });
+$('#asistente').addEventListener('drop', async e => { $('#asistente').classList.remove('soltando'); if(e.dataTransfer && e.dataTransfer.files.length){ e.preventDefault(); await adjuntarArchivos(e.dataTransfer.files); } });
+$('#o-imagen').onclick = () => $('#o-imagen-arch').click();
+$('#o-imagen-arch').addEventListener('change', async e => { await adjuntarArchivos(e.target.files); e.target.value = ''; });
+const imagenesDeDataURL = lista => (Array.isArray(lista) ? lista : []).filter(u => typeof u === 'string' && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(u) && u.length < 8e6).slice(0, 4)
+  .map(u => ({media:u.slice(5, u.indexOf(';')), data:u.split(',')[1], url:u}));
+
 /* ---------- ÓRDENES EN EL CHAT: cambiar de modelo o de forma de calcular escribiéndolo ---------- */
 const ORDENES = [
   {rx:/^\s*(?:por favor\s*,?\s*)?(?:us[aá]|utiliz[aá]|cambi[aá] a|pas[aá] a|con)\s+(?:a\s+)?claude\b/i, hacer:() => cambiarProveedor('claude')},
@@ -2852,12 +2900,14 @@ async function enviarMensaje(){
     txt = `${txt || 'Analizá esto.'}\n\nTexto que marqué en la página (${marcado.lugar}):\n"""\n${marcado.texto}\n"""`;
     if(!chat.control){ soltarMarcado(false); $('#o-msg').placeholder = 'Escribí tu pregunta… (Enter envía, Shift + Enter hace salto de línea)'; }
   }
+  if(!txt && chat.adjuntos.length && !chat.control) txt = PEDIDO_IMAGEN;
   if(!txt || chat.control) return;
   $('#o-msg').value = '';
   const inicio = chat.historial.length;
   let errorFinal = '';
   chat.turno = (chat.turno || 0) + 1;
-  chat.imgs = chat.imagenesPend || []; chat.imagenesPend = null;
+  chat.imgs = [...(chat.imagenesPend || []), ...chat.adjuntos].slice(0, 4); chat.imagenesPend = null;
+  if(chat.adjuntos.length){ chat.adjuntos = []; pintarAdjuntos(); $('#o-msg').placeholder = 'Escribí tu pregunta o pegá un pantallazo con Ctrl + V… (Enter envía, Shift + Enter hace salto de línea)'; }
   burbuja('yo', esc(txt) + miniaturas(chat.imgs));
   const em = $('#o-mini-estado'); if(em) em.textContent = '⏳ resolviendo…';
   chat.control = new AbortController();
@@ -2960,6 +3010,8 @@ $('#o-limpiar').onclick = () => { if(chat.control) chat.control.abort(); chat.hi
 
 /* ---------- ENVIAR DESDE OTRAS PÁGINAS: favorito (bookmarklet) que abre esta herramienta con el texto marcado ---------- */
 const URL_HERRAMIENTA = location.origin + location.pathname;
+const ES_LOCAL = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+const NOMBRE_VENTANA = ES_LOCAL ? 'superCharlie-local' : 'superCharlie';
 /* Este código corre DENTRO de la página de origen cuando tocás el favorito (por eso no usa nada de esta herramienta).
    Busca el texto marcado y las casillas de respuesta cercanas, abre la herramienta y espera las respuestas. */
 function marcadorOrigen(URLH, FV){
@@ -3174,7 +3226,7 @@ function marcadorOrigen(URLH, FV){
     window.__scResp = d;
     var viejo = document.getElementById('sc-panel'); if(viejo && viejo.__cerrar) viejo.__cerrar(); else if(viejo) viejo.remove();
     var p = document.createElement('div'); p.id = 'sc-panel';
-    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483646;width:400px;max-height:88vh;overflow:auto;background:#fff;color:#1f1f1f;border:1px solid #c4c7c5;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.22);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
+    p.style.cssText = 'position:fixed;top:16px;right:16px;z-index:2147483646;width:430px;max-height:88vh;overflow:auto;background:#fff;color:#1f1f1f;border:1px solid #c4c7c5;border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.22);font:14px/1.45 system-ui,Segoe UI,Arial,sans-serif;padding:12px 14px;text-align:left';
     var esc2 = function(x){ return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
     var btn = function(a, k, txt, prim){ return '<button type="button" data-a="' + a + '" data-k="' + k + '" style="padding:4px 10px;border-radius:7px;font:inherit;font-size:12.5px;cursor:pointer;' + (prim ? 'border:0;background:#0b57d0;color:#fff' : 'border:1px solid #c4c7c5;background:#fff;color:#1f1f1f') + '">' + txt + '</button>'; };
     var resp = d.respuestas || [];
@@ -3182,7 +3234,7 @@ function marcadorOrigen(URLH, FV){
     var h = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><b style="flex:1;font-size:15px;color:#0b57d0">' + (resp.length ? '📥 ' + (d.caso ? 'Caso ' + d.caso + ' · ' : '') + 'Respuestas' : d.esperando ? '⏳ Caso nuevo' : '🤖 superCharlie') + (window.__scItem && resp.length ? ' · Ítem ' + esc2(window.__scItem) : '') +
       (nuevo ? ' <span data-nuevo style="font-size:11.5px;color:#fff;background:#146c2e;border-radius:999px;padding:1px 7px;vertical-align:middle">✨ nuevo</span>' : '') + '</b>' +
       '<select data-prov style="font:inherit;font-size:12.5px;padding:3px 6px;border:1px solid #c4c7c5;border-radius:7px;background:#fff;color:#1f1f1f"><option value="claude">Claude</option><option value="ollama">Modelo local</option></select>' +
-      btn('minimizar', '', '▁') + btn('cerrar', '', '✕') + '</div><div data-cuerpo>';
+      btn('area', '', '🔲 Marcar área', true) + btn('minimizar', '', '▁') + btn('cerrar', '', '✕') + '</div><div data-cuerpo>';
     if(d.ejercicio && resp.length) h += '<div style="font-size:12.5px;color:#474747;background:#f0f4f9;border-radius:6px;padding:4px 8px;margin-bottom:6px">📝 «' + esc2(limpio(d.ejercicio).slice(0, 160)) + (limpio(d.ejercicio).length > 160 ? '…' : '') + '»</div>';
     if(d.resumen) h += '<div style="color:#474747;margin-bottom:4px">' + esc2(limpio(d.resumen)) + '</div>';
     if(resp.length) h += '<div style="color:#474747;font-size:12.5px;margin-bottom:6px">⌨ Poné el cursor en la casilla y apretá <b>X</b>: se pega la respuesta marcada con 👉 (y se copia). Clic en otra respuesta para elegirla. <b>Shift + X</b> escribe una X normal.</div>';
@@ -3198,8 +3250,8 @@ function marcadorOrigen(URLH, FV){
     });
     h += '<div data-aviso style="display:none;margin-top:8px;padding:7px 9px;border-radius:8px;background:#fff4e0;color:#8a5a00;font-size:13px"></div>';
     h += '<div data-modelo style="display:none;margin-top:8px;padding:8px 10px;border-radius:8px;background:#f0f4f9;white-space:pre-wrap;max-height:220px;overflow:auto;font-size:13.5px"></div>';
-    h += '<div style="margin-top:10px;border-top:1px solid #e3e3e3;padding-top:8px"><textarea data-preg rows="2" placeholder="Preguntale al modelo… (Enter envía)" style="width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid #c4c7c5;border-radius:8px;resize:vertical;background:#fff;color:#1f1f1f"></textarea>' +
-      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">' + btn('preguntar', '', '💬 Enviar al modelo', true) + btn('seleccion', '', '✉ Enviar lo que seleccioné') + btn('area', '', '🔲 Marcar área') + '</div></div></div>';
+    h += '<div style="margin-top:10px;border-top:1px solid #e3e3e3;padding-top:8px"><div data-adj style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div><textarea data-preg rows="2" placeholder="Preguntale al modelo o pegá un pantallazo (Ctrl + V)… Enter envía" style="width:100%;box-sizing:border-box;font:inherit;font-size:13.5px;padding:6px 8px;border:1px solid #c4c7c5;border-radius:8px;resize:vertical;background:#fff;color:#1f1f1f"></textarea>' +
+      '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap">' + btn('preguntar', '', '💬 Enviar al modelo', true) + btn('seleccion', '', '✉ Enviar lo que seleccioné') + '</div></div></div>';
     p.innerHTML = h; document.body.appendChild(p);
     if(nuevo){
       window.__scUltCaso = d.caso;
@@ -3292,6 +3344,27 @@ function marcadorOrigen(URLH, FV){
     document.addEventListener('click', alClick, true);
     document.addEventListener('keydown', alTecla, true);
     p.__cerrar = function(){ document.removeEventListener('keydown', alX, true); document.removeEventListener('mousedown', alElegir, true); document.removeEventListener('click', alClick, true); document.removeEventListener('keydown', alTecla, true); window.__scMarcar = null; window.__scMostrarTexto = null; p.remove(); };
+    /* ---- pantallazos pegados en el cuadro de pregunta ---- */
+    var adjBox = p.querySelector('[data-adj]'), adj = window.__scAdj || (window.__scAdj = []);
+    var pintarAdj = function(){
+      adjBox.style.display = adj.length ? 'flex' : 'none';
+      adjBox.innerHTML = adj.map(function(u, k){ return '<span style="position:relative"><img src="' + u + '" style="max-width:90px;max-height:64px;border:1px solid #c4c7c5;border-radius:6px;display:block"><button type="button" data-a="quitar-adj" data-k="' + k + '" style="position:absolute;top:-7px;right:-7px;width:20px;height:20px;border-radius:999px;border:1px solid #c4c7c5;background:#fff;color:#1f1f1f;font-size:11px;padding:0;cursor:pointer">✕</button></span>'; }).join('');
+    };
+    pintarAdj();
+    preg.addEventListener('paste', function(e){
+      var its = e.clipboardData ? [].slice.call(e.clipboardData.items) : [];
+      var fs = its.filter(function(i){ return i.kind === 'file' && /^image\//.test(i.type); }).map(function(i){ return i.getAsFile(); });
+      if(!fs.length) return;
+      e.preventDefault();
+      fs.slice(0, 4 - adj.length).forEach(function(f){
+        createImageBitmap(f).then(function(bm){
+          var k = Math.min(1, 1600 / Math.max(bm.width, bm.height)), c = document.createElement('canvas');
+          c.width = Math.round(bm.width * k); c.height = Math.round(bm.height * k);
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bm, 0, 0, c.width, c.height);
+          adj.push(c.toDataURL('image/jpeg', 0.88)); pintarAdj();
+        });
+      });
+    });
     prov.addEventListener('change', function(){ window.__scProv = prov.value; avisarHerr({tipo:'sc-proveedor', valor:prov.value}); });
     preg.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); p.querySelector('button[data-a="preguntar"]').click(); } });
     p.addEventListener('click', function(e){
@@ -3299,11 +3372,19 @@ function marcadorOrigen(URLH, FV){
       if(!b){ var f = e.target.closest('[data-fila]'); if(f){ actual = Number(f.dataset.fila); pintar(); } return; }
       var a = b.dataset.a, k = b.dataset.k === '' ? null : Number(b.dataset.k);
       if(a === 'cerrar'){ p.__cerrar(); return; }
-      if(a === 'minimizar'){ var cu = p.querySelector('[data-cuerpo]'); var oc = cu.style.display === 'none'; cu.style.display = oc ? '' : 'none'; b.textContent = oc ? '▁' : '▢'; p.style.width = oc ? '400px' : 'auto'; return; }
+      if(a === 'minimizar'){ var cu = p.querySelector('[data-cuerpo]'); var oc = cu.style.display === 'none'; cu.style.display = oc ? '' : 'none'; b.textContent = oc ? '▁' : '▢'; p.style.width = oc ? '430px' : 'auto'; return; }
       if(a === 'pasar'){ var er = window.__scEscribir(resp[k]); marcar(k, er); if(!er){ pasadas[k] = true; if(k === actual) avanzar(); } return; }
       if(a === 'elegir'){ esperando = k; aviso.style.display = 'block'; aviso.textContent = 'Ahora hacé clic en la casilla donde va «' + String(resp[k].valor) + '». (Esc para cancelar)'; return; }
       if(a === 'porque'){ mandar({tipo:'sc-pregunta', texto:'¿Por qué la respuesta de «' + limpio(resp[k].pregunta || ('la pregunta ' + (k + 1))) + '» es ' + resp[k].valor + '? Explicámelo con palabras y los pasos.'}); return; }
-      if(a === 'preguntar'){ var q = preg.value.trim(); if(!q){ preg.focus(); return; } preg.value = ''; mandar({tipo:'sc-pregunta', texto:q}); return; }
+      if(a === 'quitar-adj'){ adj.splice(k, 1); pintarAdj(); return; }
+      if(a === 'preguntar'){
+        var q = preg.value.trim(); if(!q && !adj.length){ preg.focus(); return; }
+        preg.value = '';
+        var ims = adj.splice(0, adj.length);
+        if(ims.length){ window.__scNuevoCaso(); window.__scTextoModelo = '⏳ Se lo mandé al modelo con ' + ims.length + ' imagen(es)…'; if(window.__scMostrarTexto) window.__scMostrarTexto(); avisarHerr({tipo:'sc-pregunta', texto:q, imagenes:ims}); }
+        else mandar({tipo:'sc-pregunta', texto:q});
+        return;
+      }
       if(a === 'seleccion'){
         var s = window.__scSel;
         if(!s || !s.texto){ aviso.style.display = 'block'; aviso.textContent = 'Primero marcá con el mouse el texto del ejercicio en la página y después tocá «Enviar lo que seleccioné».'; return; }
@@ -3334,7 +3415,7 @@ function marcadorOrigen(URLH, FV){
   }
   window.__scOrigenH = origenH;
   var camposTxt = JSON.stringify(campos); if(camposTxt.length > 7000) camposTxt = JSON.stringify(campos.slice(0, 15));
- window.__scHerr = window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&item=' + encodeURIComponent(item) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), 'superCharlie');
+ window.__scHerr = window.open(URLH + '#enviar=' + encodeURIComponent(t.slice(0, 8000)) + '&de=' + encodeURIComponent((document.title || location.hostname).slice(0, 100)) + '&item=' + encodeURIComponent(item) + '&fv=' + FV + '&token=' + token + '&campos=' + encodeURIComponent(camposTxt), ('superCharlie' + (/^https?:\/\/(localhost|127\.0\.0\.1)[:\/]/.test(URLH) ? '-local' : '')));
   var intentos = 0, saludo = setInterval(function(){
     if(++intentos > 60 || window.__scSaludado === token){ clearInterval(saludo); return; }
     try{ window.__scHerr.postMessage({tipo:'sc-hola', token:token}, origenH); }catch(e){}
@@ -3348,10 +3429,11 @@ function codigoMarcador(){
   if(!/^https?:$/.test(location.protocol)){
     a.classList.add('apagado'); a.removeAttribute('href'); $('#marcador-copiar').disabled = true;
     aviso.className = 'estado err';
-    aviso.textContent = 'Abriste la herramienta como archivo (doble clic). Los navegadores no dejan que otras páginas abran un archivo de tu computadora, así que el favorito no funcionaría. Abrí la herramienta desde GitHub Pages (o desde http://localhost:8000) y arrastrá el botón desde ahí.';
+    aviso.textContent = 'Abriste la herramienta como archivo (doble clic). Así funcionan los cálculos y el asistente, pero los navegadores no dejan que otras páginas abran un archivo de tu computadora, así que el favorito no funcionaría. Para la versión completa sin internet, abrí «Abrir superCharlie.bat» (está en la misma carpeta) o usá la versión de GitHub Pages.';
     return;
   }
   a.href = codigoMarcador();
+  if(ES_LOCAL) a.textContent = '📤 Enviar a mi herramienta (local)';
   $('#marcador-version').textContent = `Favorito versión ${VERSION_FAVORITO} (herramienta v${VERSION})`;
   a.addEventListener('click', e => { e.preventDefault(); aviso.className = 'estado'; aviso.textContent = 'Este botón no se toca aquí: arrastralo a la barra de favoritos y usalo en otras páginas.'; });
   $('#marcador-copiar').onclick = e => copiar(codigoMarcador(), e.target);
@@ -3408,9 +3490,9 @@ function aplicarIntensidad(v, guardar){
 }
 ['#a-int','#o-int'].forEach(sel => $(sel).addEventListener('input', e => aplicarIntensidad(Number(e.target.value), true)));
 aplicarIntensidad(intensidad, false);
-try{ if(!window.name) window.name = 'superCharlie'; }catch(e){}
+try{ if(!window.name || /^superCharlie/.test(window.name)) window.name = NOMBRE_VENTANA; }catch(e){}
 (function mostrarVersion(){
-  const t = `v${VERSION}`, tip = `Versión ${VERSION} · ${VERSION_FECHA}\n\nNovedades:\n` + NOVEDADES.join('\n');
+  const t = `v${VERSION}` + (ES_LOCAL ? ' · local' : location.protocol === 'file:' ? ' · archivo' : ''), tip = `Versión ${VERSION} · ${VERSION_FECHA}\n\nNovedades:\n` + NOVEDADES.join('\n');
   $('#version').textContent = t; $('#version').title = tip;
   $('#version-chat').textContent = t; $('#version-chat').title = tip;
   $('#version-pie').textContent = `Versión ${VERSION} · ${VERSION_FECHA}`;
